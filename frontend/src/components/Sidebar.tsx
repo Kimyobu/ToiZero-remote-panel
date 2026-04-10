@@ -58,9 +58,9 @@ export default function Sidebar() {
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`flex-1 text-xs py-0.5 rounded transition-colors font-medium ${
+              className={`flex-1 text-[10px] py-1.5 rounded transition-all font-bold uppercase tracking-tighter ${
                 categoryFilter === cat
-                  ? 'bg-toi-accent text-white'
+                  ? 'bg-toi-accent text-white shadow-lg shadow-toi-accent/20'
                   : 'text-toi-text-muted hover:bg-toi-card hover:text-toi-text'
               }`}
               id={`category-filter-${cat}`}
@@ -76,10 +76,10 @@ export default function Sidebar() {
             <button
               key={s.value}
               onClick={() => setStatusFilter(s.value)}
-              className={`flex-1 text-xs py-0.5 rounded transition-colors ${
+              className={`flex-1 text-[10px] py-1.5 rounded transition-all font-bold uppercase tracking-tighter ${
                 statusFilter === s.value
-                  ? 'bg-toi-green/20 text-toi-green border border-toi-green/30'
-                  : 'text-toi-text-muted hover:bg-toi-card'
+                  ? 'bg-toi-green/10 text-toi-green border border-toi-green/30'
+                  : 'text-toi-text-muted hover:bg-toi-card border border-transparent'
               }`}
             >
               {s.label}
@@ -101,17 +101,37 @@ export default function Sidebar() {
       {/* Task list */}
       <div className="flex-1 scrollable">
         {isLoadingList && filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 gap-2">
-            <div className="w-4 h-4 border-2 border-toi-accent border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs text-toi-text-muted">Loading tasks...</span>
+          <div className="py-2 space-y-1">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div key={i} className="px-3 py-2 animate-pulse flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-toi-border" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-2.5 bg-toi-border rounded w-1/4" />
+                  <div className="h-2 bg-toi-border rounded w-3/4" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 gap-1">
-            <SlidersHorizontal className="w-6 h-6 text-toi-muted" />
-            <span className="text-xs text-toi-text-muted">No tasks found</span>
+          <div className="flex flex-col items-center justify-center h-48 gap-3 px-4 text-center">
+            <SlidersHorizontal className="w-8 h-8 text-toi-muted/30" />
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-toi-text block">No matching tasks</span>
+              <span className="text-[10px] text-toi-text-muted">Try adjusting your search or filters</span>
+            </div>
+            <button 
+              onClick={() => {
+                setSearchQuery('');
+                setCategoryFilter('all');
+                setStatusFilter('all');
+              }}
+              className="btn-ghost py-1 px-4"
+            >
+              Reset Filters
+            </button>
           </div>
         ) : (
-          <div className="py-1">
+          <div className="py-1 animate-fade-in">
             {filtered.map(task => (
               <TaskRow
                 key={task.id}

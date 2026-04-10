@@ -112,12 +112,13 @@ export default function MainContent() {
         )}
       </div>
 
-      {/* PDF Viewer */}
-      <div className="flex-1 overflow-hidden">
+      {/* PDF Viewer Area */}
+      <div className="flex-1 overflow-hidden relative">
         {isLoadingDetail ? (
-          <div className="flex flex-col items-center justify-center h-full gap-2">
-            <div className="w-5 h-5 border-2 border-toi-accent border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs text-toi-text-muted">Loading task...</span>
+          <div className="absolute inset-0 p-4 space-y-4 animate-pulse">
+            <div className="h-8 bg-toi-surface rounded w-1/3" />
+            <div className="flex-1 bg-toi-surface rounded-lg h-[80%]" />
+            <div className="h-6 bg-toi-surface rounded w-2/3" />
           </div>
         ) : (
           <PDFViewer taskId={selectedTaskId} manualUrl={appliedUrl} />

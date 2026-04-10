@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 import MainContent from '../components/MainContent';
 import RightPanel from '../components/RightPanel';
 import TopBar from '../components/TopBar';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export default function Dashboard() {
   const { fetchTasks, fetchLocalInfo, selectedTaskId, selectTask } = useTaskStore();
@@ -70,15 +71,37 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-toi-bg overflow-hidden">
-      <TopBar />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <div className="resize-handle" />
-        <MainContent />
-        <div className="resize-handle" />
-        <RightPanel />
+    <div className="flex flex-col h-screen bg-toi-bg overflow-hidden text-selection">
+      <ErrorBoundary name="TopBar">
+        <TopBar />
+      </ErrorBoundary>
+      
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Sidebar - Adaptive hidden on mobile if not needed, but here we prioritize Desktop layout first */}
+        <div className="hidden md:flex md:flex-row h-full overflow-hidden flex-shrink-0">
+          <ErrorBoundary name="Sidebar">
+            <Sidebar />
+          </ErrorBoundary>
+          <div className="resize-handle" />
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex overflow-hidden min-w-0 bg-toi-bg">
+          <ErrorBoundary name="MainContent">
+            <MainContent />
+          </ErrorBoundary>
+        </div>
+
+        {/* Right Panel - Hidden on small mobile to save space */}
+        <div className="hidden lg:flex lg:flex-row h-full overflow-hidden flex-shrink-0">
+          <div className="resize-handle" />
+          <ErrorBoundary name="RightPanel">
+            <RightPanel />
+          </ErrorBoundary>
+        </div>
       </div>
+      
+      {/* Mobile Indicator or Quick Nav could be added here */}
     </div>
   );
 }

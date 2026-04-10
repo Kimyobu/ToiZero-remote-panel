@@ -7,6 +7,11 @@
     box-sizing: border-box;
   }
 
+  /* Accessibility: Global Focus Styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-toi-accent ring-offset-2 ring-offset-toi-bg transition-shadow duration-75;
+  }
+
   html, body, #root {
     height: 100%;
     margin: 0;
