@@ -1,11 +1,17 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import * as cheerio from 'cheerio';
 import qs from 'qs';
+import http from 'http';
+import https from 'https';
 
 const BASE_URL = 'https://toi-coding.informatics.buu.ac.th';
 const REQUEST_DELAY_MS = 300;
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
+
+// Optimized agents for persistent connections
+const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 100, freeSocketTimeout: 30000 });
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 100, freeSocketTimeout: 30000 });
 
 let lastRequestTime = 0;
 
@@ -37,6 +43,8 @@ export function createToiClient(sessionCookie: string): AxiosInstance {
   const client = axios.create({
     baseURL: BASE_URL,
     timeout: 30000,
+    httpAgent,
+    httpsAgent,
     headers: {
       'Cookie': `00-pre-toi_login=${sessionCookie}`,
       'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

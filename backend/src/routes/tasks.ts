@@ -8,6 +8,15 @@ const router = Router();
 const taskListCache = new Map<string, { data: any; cachedAt: number }>();
 const taskDetailCache = new Map<string, { data: any; cachedAt: number }>();
 const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const MAX_CACHE_ENTRIES = 200; // Limit memory usage
+
+function enforceCacheLimits(cache: Map<string, any>) {
+  if (cache.size > MAX_CACHE_ENTRIES) {
+    // Basic LRU: delete oldest entries (keys are inserted in order)
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey) cache.delete(oldestKey);
+  }
+}
 
 function requireSession(req: Request, res: Response): string | null {
   const cookie = req.headers['x-session-cookie'] as string;
@@ -40,7 +49,7 @@ router.get('/', async (req: Request, res: Response) => {
     console.log(`[Tasks API] Fetched HTML size: ${html.length} bytes`);
     
     const tasks = parseTaskList(html);
-
+    enforceCacheLimits(taskListCache);
     taskListCache.set(cacheKey, { data: tasks, cachedAt: Date.now() });
 
     return res.json({ tasks, fromCache: false });
@@ -76,7 +85,7 @@ router.get('/:taskId', async (req: Request, res: Response) => {
     const response = await fetchWithRetry(client, `/00-pre-toi/tasks/${taskId}/description`);
     const html = response.data as string;
     const task = parseTaskDetail(html, taskId);
-
+    enforceCacheLimits(taskDetailCache);
     taskDetailCache.set(cacheKey, { data: task, cachedAt: Date.now() });
 
     return res.json({ task, fromCache: false });

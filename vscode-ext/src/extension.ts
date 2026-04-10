@@ -38,8 +38,21 @@ export function activate(context: vscode.ExtensionContext) {
         statusBarItem.hide();
     };
 
+    // Throttled refresh helper
+    let refreshTimeout: NodeJS.Timeout | null = null;
+    const throttledRefresh = () => {
+        if (refreshTimeout) return;
+        refreshTimeout = setTimeout(() => {
+            decorationProvider.refresh();
+            refreshTimeout = null;
+        }, 2000); // 2 seconds throttle
+    };
+
     vscode.window.onDidChangeActiveTextEditor(updateStatusBar, null, context.subscriptions);
-    vscode.workspace.onDidSaveTextDocument(updateStatusBar, null, context.subscriptions);
+    vscode.workspace.onDidSaveTextDocument(() => {
+        updateStatusBar();
+        if (sessionCookie) throttledRefresh();
+    }, null, context.subscriptions);
     updateStatusBar();
 
     // Command: Login / Sync Session
