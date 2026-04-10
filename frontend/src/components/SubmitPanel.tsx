@@ -227,7 +227,7 @@ export default function SubmitPanel() {
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="btn-primary justify-center disabled:opacity-50"
+          className="btn-primary justify-center disabled:opacity-50 active-scale"
           id="submit-btn"
         >
           {isSubmitting ? (
@@ -241,7 +241,9 @@ export default function SubmitPanel() {
       {/* Result */}
       {result && (
         <div className={`card p-3 animate-fade-in ${
-          result.success ? 'border-toi-green/30 bg-toi-green/5' : 'border-toi-red/30 bg-toi-red/5'
+          !result.success ? 'border-toi-red/30 bg-toi-red/5 animate-shake' : 
+          (result.score?.startsWith('100') ? 'border-toi-green/40 bg-toi-green/10 animate-success-once' : 
+          'border-toi-green/30 bg-toi-green/5')
         }`}>
           <div className="flex items-center gap-2 mb-1">
             {result.success 
@@ -252,8 +254,10 @@ export default function SubmitPanel() {
               {result.success ? 'Submitted Successfully' : 'Submission Failed'}
             </span>
             {result.score && (
-              <div className="ml-auto px-2 py-0.5 rounded bg-toi-accent/20 text-toi-accent font-bold text-[10px] animate-pulse">
-                SCORE: {result.score}
+              <div className={`ml-auto px-2 py-0.5 rounded text-white font-bold text-[10px] shadow-lg
+                ${result.score.startsWith('100') ? 'bg-toi-green animate-pulse-soft' : 'bg-toi-accent'}
+              `}>
+                {result.score}
               </div>
             )}
             {!result.score && result.status && (
@@ -263,18 +267,25 @@ export default function SubmitPanel() {
           <p className="text-xs text-toi-text-muted">
             {result.isEvaluated ? `Evaluation complete: ${result.score}` : result.message}
           </p>
+          
+          {!result.isEvaluated && result.success && (
+             <div className="flex items-center gap-1.5 mt-2 bg-toi-accent/20 py-1 px-2 rounded-md w-fit">
+                <div className="w-1.5 h-1.5 bg-toi-accent rounded-full animate-ping" />
+                <span className="text-[10px] text-toi-accent font-bold uppercase tracking-wider">Evaluating Score...</span>
+             </div>
+          )}
 
           {result.rawResponse && (
-            <div className="mt-2">
+            <div className="mt-3 pt-2 border-t border-toi-border/50">
               <button
                 onClick={() => setShowRaw(v => !v)}
-                className="flex items-center gap-1 text-xs text-toi-muted hover:text-toi-text"
+                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight text-toi-muted hover:text-toi-text active-scale"
               >
                 <Eye className="w-3 h-3" />
                 {showRaw ? 'Hide' : 'Show'} raw response
               </button>
               {showRaw && (
-                <pre className="mt-1 p-2 bg-toi-bg rounded text-xs text-toi-text-muted overflow-x-auto max-h-32 font-mono">
+                <pre className="mt-2 p-2 bg-toi-bg/80 rounded border border-toi-border text-[10px] text-toi-text-muted overflow-x-auto max-h-32 font-mono scrollable selection:bg-toi-accent/30">
                   {result.rawResponse}
                 </pre>
               )}

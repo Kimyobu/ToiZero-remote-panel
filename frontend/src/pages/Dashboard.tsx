@@ -71,37 +71,35 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-toi-bg overflow-hidden text-selection">
+    <div className="flex flex-col h-screen bg-toi-bg overflow-hidden text-selection antialiased">
       <ErrorBoundary name="TopBar">
         <TopBar />
       </ErrorBoundary>
       
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Sidebar - Adaptive hidden on mobile if not needed, but here we prioritize Desktop layout first */}
+      <div className="flex flex-1 overflow-hidden relative selection:bg-toi-accent/30">
+        {/* Sidebar - Adaptive hidden on mobile if not needed */}
         <div className="hidden md:flex md:flex-row h-full overflow-hidden flex-shrink-0">
           <ErrorBoundary name="Sidebar">
             <Sidebar />
           </ErrorBoundary>
-          <div className="resize-handle" />
+          <div className="resize-handle hover:bg-toi-accent/40 active:bg-toi-accent/60 transition-colors" />
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex overflow-hidden min-w-0 bg-toi-bg">
+        <div className="flex-1 flex overflow-hidden min-w-0 bg-toi-bg shadow-2xl shadow-black/20">
           <ErrorBoundary name="MainContent">
             <MainContent />
           </ErrorBoundary>
         </div>
 
-        {/* Right Panel - Hidden on small mobile to save space */}
+        {/* Right Panel - Hidden on small mobile */}
         <div className="hidden lg:flex lg:flex-row h-full overflow-hidden flex-shrink-0">
-          <div className="resize-handle" />
+          <div className="resize-handle hover:bg-toi-accent/40 active:bg-toi-accent/60 transition-colors" />
           <ErrorBoundary name="RightPanel">
             <RightPanel />
           </ErrorBoundary>
         </div>
       </div>
-      
-      {/* Mobile Indicator or Quick Nav could be added here */}
     </div>
   );
 }

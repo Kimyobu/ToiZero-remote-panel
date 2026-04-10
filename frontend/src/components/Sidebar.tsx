@@ -98,119 +98,127 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Task list */}
-      <div className="flex-1 scrollable">
-        {isLoadingList && filtered.length === 0 ? (
-          <div className="py-2 space-y-1">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <div key={i} className="px-3 py-2 animate-pulse flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-toi-border" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-2.5 bg-toi-border rounded w-1/4" />
-                  <div className="h-2 bg-toi-border rounded w-3/4" />
+        {/* Task list */}
+        <div className="flex-1 scrollable">
+          {isLoadingList && filtered.length === 0 ? (
+            <div className="py-2 space-y-1">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div key={i} className="px-3 py-2 animate-pulse flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-toi-border" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-2.5 bg-toi-border rounded w-1/4" />
+                    <div className="h-2 bg-toi-border rounded w-3/4" />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-3 px-4 text-center">
-            <SlidersHorizontal className="w-8 h-8 text-toi-muted/30" />
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-toi-text block">No matching tasks</span>
-              <span className="text-[10px] text-toi-text-muted">Try adjusting your search or filters</span>
+              ))}
             </div>
-            <button 
-              onClick={() => {
-                setSearchQuery('');
-                setCategoryFilter('all');
-                setStatusFilter('all');
-              }}
-              className="btn-ghost py-1 px-4"
-            >
-              Reset Filters
-            </button>
-          </div>
-        ) : (
-          <div className="py-1 animate-fade-in">
-            {filtered.map(task => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                isSelected={task.id === selectedTaskId}
-                onSelect={() => selectTask(task.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface TaskRowProps {
-  task: any;
-  isSelected: boolean;
-  onSelect: () => void;
-}
-
-function TaskRow({ task, isSelected, onSelect }: TaskRowProps) {
-  let scoreColor = 'text-toi-muted';
-  let dotColorClass = 'bg-toi-muted';
-
-  if (task.score !== null) {
-    if (task.score >= task.maxScore) {
-      scoreColor = 'text-toi-green';
-      dotColorClass = 'bg-toi-green shadow-[0_0_8px_rgba(34,197,94,0.5)]';
-    } else if (task.score > 60) {
-      scoreColor = 'text-toi-red';
-      dotColorClass = 'bg-toi-red shadow-[0_0_8px_rgba(239,68,68,0.5)]';
-    } else if (task.score > 0 || task.status === 'attempted') {
-      scoreColor = 'text-toi-yellow';
-      dotColorClass = 'bg-toi-yellow shadow-[0_0_8px_rgba(234,179,8,0.5)]';
-    }
-  }
-
-  return (
-    <button
-      onClick={onSelect}
-      className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors group
-        ${isSelected 
-          ? 'bg-toi-accent/15 border-r-2 border-toi-accent' 
-          : 'hover:bg-toi-card border-r-2 border-transparent'
-        }`}
-      id={`task-row-${task.id}`}
-    >
-      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 transition-colors ${dotColorClass}`} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-1">
-          <span className={`text-xs font-mono font-medium ${isSelected ? 'text-toi-accent' : 'text-toi-text'}`}>
-            {task.id}
-          </span>
-          <span className={`text-xs font-mono ${scoreColor}`}>
-            {task.score !== null ? `${task.score}/${task.maxScore}` : (task.status === 'not_submitted' ? '—' : `0/${task.maxScore}`)}
-          </span>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 px-4 text-center animate-fade-in">
+              <SlidersHorizontal className="w-8 h-8 text-toi-muted/30" />
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-toi-text block">No matching tasks</span>
+                <span className="text-[10px] text-toi-text-muted">Try adjusting your search or filters</span>
+              </div>
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  setCategoryFilter('all');
+                  setStatusFilter('all');
+                }}
+                className="btn-ghost py-1 px-4 active-scale"
+              >
+                Reset Filters
+              </button>
+            </div>
+          ) : (
+            <div className="py-1">
+              {filtered.map((task, index) => (
+                <div 
+                  key={task.id} 
+                  className="animate-slide-in" 
+                  style={{ animationDelay: `${Math.min(index * 20, 300)}ms` }}
+                >
+                  <MemoizedTaskRow
+                    task={task}
+                    isSelected={task.id === selectedTaskId}
+                    onSelect={selectTask}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {task.title && task.title !== task.id && (
-          <p className="text-toi-text-muted text-xs truncate mt-0.5" title={task.title}>
-            {task.title}
-          </p>
-        )}
-        {/* Local file indicators */}
-        {task.localFiles && (
-          <div className="flex items-center gap-1 mt-0.5">
-            {task.localFiles.solution && (
-              <span title={`Has ${task.localFiles.solutionExt} solution`}>
-                <FileCode className="w-2.5 h-2.5 text-toi-accent" />
-              </span>
-            )}
-            {task.localFiles.notes && (
-              <span title="Has notes">
-                <FileText className="w-2.5 h-2.5 text-toi-text-muted" />
-              </span>
-            )}
-          </div>
-        )}
       </div>
-    </button>
-  );
-}
+    );
+  }
+  
+  interface TaskRowProps {
+    task: any;
+    isSelected: boolean;
+    onSelect: (id: string) => void;
+  }
+  
+  const TaskRow = ({ task, isSelected, onSelect }: TaskRowProps) => {
+    let scoreColor = 'text-toi-muted';
+    let dotColorClass = 'bg-toi-muted';
+  
+    if (task.score !== null) {
+      if (task.score >= task.maxScore) {
+        scoreColor = 'text-toi-green font-bold';
+        dotColorClass = 'bg-toi-green shadow-[0_0_8px_rgba(34,197,94,0.5)]';
+      } else if (task.score > 60) {
+        scoreColor = 'text-toi-red font-bold';
+        dotColorClass = 'bg-toi-red shadow-[0_0_8px_rgba(239,68,68,0.5)]';
+      } else if (task.score > 0 || task.status === 'attempted') {
+        scoreColor = 'text-toi-yellow font-bold';
+        dotColorClass = 'bg-toi-yellow shadow-[0_0_8px_rgba(234,179,8,0.5)]';
+      }
+    }
+  
+    return (
+      <button
+        onClick={() => onSelect(task.id)}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all active-scale group relative
+          ${isSelected 
+            ? 'bg-toi-accent/10 border-r-2 border-toi-accent' 
+            : 'hover:bg-toi-card/40 border-r-2 border-transparent'
+          }`}
+        id={`task-row-${task.id}`}
+      >
+        <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-300 ${dotColorClass}`} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 overflow-hidden">
+            <span className={`text-[11px] font-mono font-bold tracking-tight shrink-0 ${isSelected ? 'text-toi-accent' : 'text-toi-text'}`}>
+              {task.id}
+            </span>
+            <div className="h-px flex-1 bg-toi-border/30 mx-1" />
+            <span className={`text-[11px] font-mono tabular-nums text-right ${scoreColor}`}>
+              {task.score !== null ? `${task.score}/${task.maxScore}` : (task.status === 'not_submitted' ? '—' : `0/${task.maxScore}`)}
+            </span>
+          </div>
+          {task.title && task.title !== task.id && (
+            <p className="text-toi-text-muted text-[10px] truncate leading-tight mt-0.5 font-medium opacity-80" title={task.title}>
+              {task.title}
+            </p>
+          )}
+          {/* Local file indicators */}
+          {task.localFiles && (
+            <div className="flex items-center gap-1.5 mt-1 opacity-70 group-hover:opacity-100 transition-opacity">
+              {task.localFiles.solution && (
+                <div title={`Has ${task.localFiles.solutionExt} solution`} className="bg-toi-accent/10 p-0.5 rounded shadow-sm">
+                  <FileCode className="w-2.5 h-2.5 text-toi-accent" />
+                </div>
+              )}
+              {task.localFiles.notes && (
+                <div title="Has notes" className="bg-toi-muted/10 p-0.5 rounded shadow-sm">
+                  <FileText className="w-2.5 h-2.5 text-toi-muted" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </button>
+    );
+  };
+
+  const MemoizedTaskRow = React.memo(TaskRow);

@@ -102,7 +102,6 @@ export const useTaskStore = create<TaskStore>()(
           if (taskDetail.score === null || taskDetail.status === 'not_submitted') {
             const listItem = tasks.find(t => t.id === taskId);
             if (listItem && (listItem.score !== null || listItem.status !== 'not_submitted')) {
-              console.log(`[Store] Fallback to sidebar data for ${taskId}: score=${listItem.score}, status=${listItem.status}`);
               taskDetail.score = listItem.score;
               taskDetail.maxScore = listItem.maxScore;
               taskDetail.status = listItem.status;

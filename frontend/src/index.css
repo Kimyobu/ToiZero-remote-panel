@@ -121,6 +121,48 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
+
+  /* Snappy Entrances */
+  .animate-stagger-1 { animation-delay: 50ms; }
+  .animate-stagger-2 { animation-delay: 100ms; }
+  .animate-stagger-3 { animation-delay: 150ms; }
+
+  /* Tactile Interactions */
+  .active-scale {
+    @apply active:scale-[0.97] transition-transform duration-75;
+  }
+  
+  .hover-glow-accent {
+    @apply transition-all duration-150 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:border-toi-accent/50;
+  }
+
+  .hover-glow-green {
+    @apply transition-all duration-150 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:border-toi-green/50;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes successPulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.animate-shake {
+  animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.animate-success-pulse {
+  animation: successPulse 1s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+.animate-success-once {
+  animation: successPulse 0.5s cubic-bezier(0.24, 0, 0.38, 1) forwards;
 }
 
 /* PDF.js canvas */

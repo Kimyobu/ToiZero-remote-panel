@@ -3,9 +3,29 @@ import { useAuthStore } from '../stores/authStore';
 import { useTaskStore } from '../stores/taskStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { 
-  Zap, RefreshCw, LogOut, Settings, Clock, 
-  ToggleLeft, ToggleRight, Terminal, Loader2 
+  Zap, RefreshCw, LogOut, Clock, 
+  ToggleLeft, ToggleRight, Terminal
 } from 'lucide-react';
+
+/**
+ * Isolated Clock component to prevent the entire TopBar from re-rendering every second.
+ * This is a key performance optimization.
+ */
+function IsolatedClock() {
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1.5 text-toi-accent text-[11px] md:text-xs font-mono font-bold tabular-nums">
+      <Clock className="w-3 h-3 text-toi-accent/50" />
+      <span>{currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+    </div>
+  );
+}
 
 export default function TopBar() {
   const { username, logout } = useAuthStore();
@@ -13,43 +33,42 @@ export default function TopBar() {
   const { 
     autoRefreshEnabled, autoRefreshInterval, toggleAutoRefresh, devMode, toggleDevMode 
   } = useSettingsStore();
-
-  const [currentTime, setCurrentTime] = React.useState(new Date());
   const [isOnline, setIsOnline] = React.useState(navigator.onLine);
 
-  // Update clock every second + Listen for online/offline
+  // Listen for online/offline
   React.useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
     return () => {
-      clearInterval(timer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  let totalScore = 0;
-  let maxPossibleScore = 0;
-  
-  tasks.forEach(t => {
-    totalScore += (t.score || 0);
-    maxPossibleScore += (t.maxScore || 100);
-  });
-
-  const progress = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
-  
-  // Normalize progress colors: Red (low) -> Yellow (mid) -> Green (high)
-  let progressColor = 'bg-toi-red shadow-[0_0_8px_rgba(239,68,68,0.5)]';
-  if (progress >= 80) {
-    progressColor = 'bg-toi-green shadow-[0_0_8px_rgba(34,197,94,0.5)]';
-  } else if (progress >= 40) {
-    progressColor = 'bg-toi-yellow shadow-[0_0_8px_rgba(234,179,8,0.5)]';
-  }
+  // Memoize score calculations to prevent recalculating on every render
+  const stats = React.useMemo(() => {
+    let total = 0;
+    let max = 0;
+    tasks.forEach(t => {
+      total += (t.score || 0);
+      max += (t.maxScore || 100);
+    });
+    const progress = max > 0 ? Math.round((total / max) * 100) : 0;
+    
+    let color = 'bg-toi-red';
+    let glow = 'shadow-[0_0_8px_rgba(239,68,68,0.4)]';
+    if (progress >= 80) {
+      color = 'bg-toi-green';
+      glow = 'shadow-[0_0_8px_rgba(34,197,94,0.4)]';
+    } else if (progress >= 40) {
+      color = 'bg-toi-yellow';
+      glow = 'shadow-[0_0_8px_rgba(234,179,8,0.4)]';
+    }
+    
+    return { total, max, progress, color, glow };
+  }, [tasks]);
 
   const formatLastRefresh = () => {
     if (!lastRefreshed) return 'Never';
@@ -62,7 +81,7 @@ export default function TopBar() {
       {/* Logo + Connection Status */}
       <div className="flex items-center gap-2.5 shrink-0">
         <div className="relative">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-toi-accent to-blue-600 flex items-center justify-center shadow shadow-toi-accent/30">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-toi-accent to-blue-600 flex items-center justify-center shadow shadow-toi-accent/30 active-scale">
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
           <div 
@@ -72,10 +91,10 @@ export default function TopBar() {
             title={isOnline ? 'Connected' : 'Offline'}
           />
         </div>
-        <span className="text-xs font-bold text-toi-text hidden sm:inline">ToiZero</span>
+        <span className="text-xs font-bold text-toi-text hidden sm:inline tracking-tight">ToiZero</span>
       </div>
 
-      <div className="w-px h-4 bg-toi-border shrink-0" />
+      <div className="w-px h-4 bg-toi-border/50 shrink-0" />
 
       {/* Progress summary */}
       {tasks.length > 0 && (
@@ -83,16 +102,16 @@ export default function TopBar() {
           <div className="flex items-center gap-1.5 min-w-0">
             <div className="w-16 md:w-24 h-1.5 bg-toi-border rounded-full overflow-hidden shrink-0">
               <div 
-                className={`h-full rounded-full transition-all duration-700 ease-out ${progressColor}`}
-                style={{ width: `${progress}%` }}
+                className={`h-full rounded-full transition-all duration-700 ease-out ${stats.color} ${stats.glow}`}
+                style={{ width: `${stats.progress}%` }}
               />
             </div>
-            <span className="text-[10px] md:text-xs text-toi-text-muted font-mono whitespace-nowrap">{progress}%</span>
+            <span className="text-[10px] md:text-xs text-toi-text-muted font-mono tabular-nums whitespace-nowrap">{stats.progress}%</span>
           </div>
-          <div className="hidden md:flex items-center gap-2 text-xs font-mono">
-            <span className={totalScore > 0 ? "text-toi-text" : "text-toi-muted"}>{totalScore}</span>
-            <span className="text-toi-muted/50">/</span>
-            <span className="text-toi-muted">{maxPossibleScore}</span>
+          <div className="hidden md:flex items-center gap-2 text-[11px] font-mono tabular-nums">
+            <span className={stats.total > 0 ? "text-toi-text" : "text-toi-muted"}>{stats.total}</span>
+            <span className="text-toi-muted/30">/</span>
+            <span className="text-toi-muted">{stats.max}</span>
           </div>
         </div>
       )}
@@ -107,10 +126,7 @@ export default function TopBar() {
             <span>{formatLastRefresh()}</span>
           </div>
         )}
-        <div className="flex items-center gap-1.5 text-toi-accent text-[11px] md:text-xs font-mono font-bold tabular-nums">
-          <Clock className="w-3 h-3 text-toi-accent/50" />
-          <span>{currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-        </div>
+        <IsolatedClock />
       </div>
 
       <div className="w-px h-4 bg-toi-border shrink-0" />
