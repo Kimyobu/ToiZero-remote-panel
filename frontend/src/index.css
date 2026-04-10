@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    @apply bg-toi-bg text-toi-text font-sans;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-toi-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-toi-muted;
+  }
+
+  ::selection {
+    @apply bg-toi-accent/30 text-toi-text;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer select-none;
+  }
+  .btn-primary {
+    @apply btn bg-toi-accent text-white hover:bg-toi-accent-hover active:scale-95;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-toi-text-muted hover:bg-toi-card hover:text-toi-text border border-toi-border;
+  }
+  .btn-danger {
+    @apply btn bg-toi-red/20 text-toi-red hover:bg-toi-red/30 border border-toi-red/30;
+  }
+  .btn-success {
+    @apply btn bg-toi-green/20 text-toi-green hover:bg-toi-green/30 border border-toi-green/30;
+  }
+
+  .card {
+    @apply bg-toi-card border border-toi-border rounded-lg;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium;
+  }
+  .badge-solved {
+    @apply badge bg-toi-green/15 text-toi-green border border-toi-green/25;
+  }
+  .badge-attempted {
+    @apply badge bg-toi-yellow/15 text-toi-yellow border border-toi-yellow/25;
+  }
+  .badge-not-submitted {
+    @apply badge bg-toi-muted/20 text-toi-text-muted border border-toi-border;
+  }
+
+  .input {
+    @apply bg-toi-surface border border-toi-border rounded-md px-3 py-1.5 text-toi-text text-xs 
+           focus:outline-none focus:border-toi-accent focus:ring-1 focus:ring-toi-accent/50 
+           placeholder:text-toi-muted transition-colors duration-150 w-full;
+  }
+
+  .panel-header {
+    @apply flex items-center justify-between px-3 py-2 border-b border-toi-border bg-toi-surface/50;
+  }
+
+  .panel-title {
+    @apply text-xs font-semibold text-toi-text-muted uppercase tracking-wider flex items-center gap-1.5;
+  }
+
+  .dot-solved {
+    @apply w-2 h-2 rounded-full bg-toi-green shrink-0;
+  }
+  .dot-attempted {
+    @apply w-2 h-2 rounded-full bg-toi-yellow shrink-0;
+  }
+  .dot-not-submitted {
+    @apply w-2 h-2 rounded-full bg-toi-muted/50 shrink-0;
+  }
+
+  .kbd {
+    @apply inline-flex items-center rounded border border-toi-border bg-toi-surface 
+           px-1.5 py-0.5 text-xs text-toi-text-muted font-mono;
+  }
+}
+
+@layer utilities {
+  .scrollable {
+    @apply overflow-y-auto overscroll-contain;
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent;
+  }
+  .glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+/* PDF.js canvas */
+.pdf-canvas {
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* Markdown preview */
+.markdown-preview {
+  @apply text-toi-text text-xs leading-relaxed;
+}
+.markdown-preview h1 { @apply text-base font-bold mb-2 text-toi-text; }
+.markdown-preview h2 { @apply text-sm font-semibold mb-1.5 text-toi-text; }
+.markdown-preview h3 { @apply text-xs font-semibold mb-1 text-toi-text; }
+.markdown-preview p { @apply mb-2 text-toi-text-muted; }
+.markdown-preview code { @apply bg-toi-surface px-1 py-0.5 rounded text-toi-accent font-mono text-xs; }
+.markdown-preview pre { @apply bg-toi-surface p-3 rounded-lg mb-2 overflow-x-auto; }
+.markdown-preview pre code { @apply bg-transparent p-0; }
+.markdown-preview ul, .markdown-preview ol { @apply pl-4 mb-2 text-toi-text-muted; }
+.markdown-preview li { @apply mb-0.5; }
+.markdown-preview a { @apply text-toi-accent hover:underline; }
+.markdown-preview blockquote { @apply border-l-2 border-toi-border pl-3 text-toi-text-muted italic; }
+.markdown-preview hr { @apply border-toi-border my-3; }
+
+/* Resizer handle */
+.resize-handle {
+  @apply w-1 cursor-col-resize hover:bg-toi-accent/50 transition-colors duration-150;
+  background: transparent;
+  flex-shrink: 0;
+}
