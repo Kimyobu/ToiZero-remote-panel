@@ -10,6 +10,8 @@ interface SubmitResult {
   message: string;
   rawResponse?: string;
   status?: number;
+  score?: string;
+  isEvaluated?: boolean;
 }
 
 export default function SubmitPanel() {
@@ -83,12 +85,38 @@ export default function SubmitPanel() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const { success, message, rawResponse, status } = res.data;
-      setResult({ success, message, rawResponse, status });
+      const { success, message, rawResponse, status, score, isEvaluated } = res.data;
+      setResult({ success, message, rawResponse, status, score, isEvaluated });
 
       if (success) {
-        addActivity({ type: 'submit', taskId: selectedTaskId!, detail: message });
-        // Refresh task after submit
+        addActivity({ 
+          type: 'submit', 
+          taskId: selectedTaskId!, 
+          detail: score ? `Submitted: Received ${score}` : message 
+        });
+
+        // If evaluated, update the taskDetail in store immediately so UI reflects it
+        if (isEvaluated && score && taskDetail) {
+          const numericScore = parseInt(score.split('/')[0]) || 0;
+          const max = parseInt(score.split('/')[1]) || 100;
+          const newStatus = numericScore >= max ? 'solved' : 'attempted';
+          
+          useTaskStore.setState(state => {
+            if (state.taskDetail && state.taskDetail.id === selectedTaskId) {
+              return {
+                taskDetail: {
+                  ...state.taskDetail,
+                  score: numericScore,
+                  maxScore: max,
+                  status: newStatus as any
+                }
+              };
+            }
+            return state;
+          });
+        }
+
+        // Refresh list after submit to update sidebar
         setTimeout(() => fetchTasks(true), 1500);
       }
     } catch (err: any) {
@@ -99,6 +127,19 @@ export default function SubmitPanel() {
       setIsSubmitting(false);
     }
   };
+
+  // Keyboard shortcut Ctrl+Enter to submit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (selectedTaskId && !isSubmitting && (file || localSolution)) {
+          handleSubmit();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedTaskId, isSubmitting, file, localSolution]);
 
   // Quick submit from local
   const handleLocalSubmit = () => {
@@ -210,11 +251,18 @@ export default function SubmitPanel() {
             <span className={`text-xs font-medium ${result.success ? 'text-toi-green' : 'text-toi-red'}`}>
               {result.success ? 'Submitted Successfully' : 'Submission Failed'}
             </span>
-            {result.status && (
+            {result.score && (
+              <div className="ml-auto px-2 py-0.5 rounded bg-toi-accent/20 text-toi-accent font-bold text-[10px] animate-pulse">
+                SCORE: {result.score}
+              </div>
+            )}
+            {!result.score && result.status && (
               <span className="text-xs text-toi-muted ml-auto font-mono">HTTP {result.status}</span>
             )}
           </div>
-          <p className="text-xs text-toi-text-muted">{result.message}</p>
+          <p className="text-xs text-toi-text-muted">
+            {result.isEvaluated ? `Evaluation complete: ${result.score}` : result.message}
+          </p>
 
           {result.rawResponse && (
             <div className="mt-2">
@@ -243,7 +291,7 @@ export default function SubmitPanel() {
             <span className="text-toi-text font-mono">{taskDetail.id}</span>
             <span className="text-toi-muted">Score</span>
             <span className="text-toi-text">
-              {taskDetail.score !== null ? `${taskDetail.score}/${taskDetail.maxScore}` : '—'}
+              {taskDetail.score !== null ? `${taskDetail.score}/${taskDetail.maxScore}` : (taskDetail.status === 'not_submitted' ? '—' : `0/${taskDetail.maxScore}`)}
             </span>
             <span className="text-toi-muted">Status</span>
             <span className={

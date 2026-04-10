@@ -167,7 +167,7 @@ function TaskRow({ task, isSelected, onSelect }: TaskRowProps) {
             {task.id}
           </span>
           <span className={`text-xs font-mono ${scoreColor}`}>
-            {task.score !== null ? `${task.score}/${task.maxScore}` : '—'}
+            {task.score !== null ? `${task.score}/${task.maxScore}` : (task.status === 'not_submitted' ? '—' : `0/${task.maxScore}`)}
           </span>
         </div>
         {task.title && task.title !== task.id && (

@@ -43,7 +43,7 @@ function normalizeStatus(text: string): 'solved' | 'attempted' | 'not_submitted'
   
   // If it's explicitly 0 / 100
   if (lower.startsWith('0') && lower.includes('/')) {
-    return 'not_submitted';
+    return 'attempted';
   }
   
   // If it's something like 100 / 100 or 50 / 100
@@ -51,15 +51,16 @@ function normalizeStatus(text: string): 'solved' | 'attempted' | 'not_submitted'
   if (slashMatch) {
     const s = parseInt(slashMatch[1]);
     const m = parseInt(slashMatch[2]);
-    if (s >= m) return 'solved';
-    if (s > 0) return 'attempted';
-    return 'not_submitted';
+    if (s >= m && m > 0) return 'solved';
+    return 'attempted';
   }
 
-  if (lower.includes('accept') || lower === '100' || lower.includes('correct')) {
+  if (lower.includes('accept') || lower === '100' || lower.includes('correct') || lower.includes('evaluated')) {
     return 'solved';
-  } else if (lower === '' || lower === '-' || lower === 'n/a' || lower.includes('no sub')) {
+  } else if (lower === '' || lower === '-' || lower === 'n/a' || lower.includes('no sub') || lower.includes('not submitted')) {
     return 'not_submitted';
+  } else if (lower.includes('evaluated')) {
+    return 'attempted';
   } else {
     return 'attempted';
   }
@@ -67,12 +68,14 @@ function normalizeStatus(text: string): 'solved' | 'attempted' | 'not_submitted'
 
 // Parse score from text like "75/100" or "75"
 function parseScore(text: string): { score: number | null; maxScore: number } {
-  text = text.trim();
+  text = text.replace(/\s+/g, ' ').trim();
+  // Match "75 / 100" or "75/100"
   const slashMatch = text.match(/(\d+)\s*\/\s*(\d+)/);
   if (slashMatch) {
     return { score: parseInt(slashMatch[1]), maxScore: parseInt(slashMatch[2]) };
   }
-  const numMatch = text.match(/(\d+)/);
+  // Match standalone numbers
+  const numMatch = text.match(/^(\d+)$/);
   if (numMatch) {
     return { score: parseInt(numMatch[1]), maxScore: 100 };
   }
@@ -186,7 +189,7 @@ export function parseTaskList(html: string): Task[] {
 
     // First cell is often the score in the overview tab
     const firstCellText = cells.eq(0).text().trim();
-    if (/\d+\s*\/\s*\d+/.test(firstCellText)) {
+    if (/\d+\s*\/\s*\d+/.test(firstCellText) || /^\d+$/.test(firstCellText)) {
       scoreText = firstCellText;
     }
 
@@ -196,7 +199,7 @@ export function parseTaskList(html: string): Task[] {
       if (!scoreText && (/\d+\/\d+/.test(text) || /^\d+$/.test(text))) {
         scoreText = text;
       }
-      if (/accept|wrong|pending|compile|runtime/i.test(text)) {
+      if (/accept|wrong|pending|compile|runtime|eval/i.test(text)) {
         statusText = statusText || text;
       }
       if (/\d{4}-\d{2}-\d{2}|\d{2}:\d{2}/.test(text)) {
@@ -249,29 +252,42 @@ export function parseTaskDetail(html: string, taskId: string): TaskDetail {
   // Extract score
   let score: number | null = null;
   let maxScore = 100;
-  const scoreText = $('[class*="score"], .score, td:contains("/")').first().text().trim();
-  if (scoreText) {
-    const parsed = parseScore(scoreText);
+  
+  // Try to find score in specialized CMS labels first
+  const scoreBadge = $('.label-info:contains("/"), .badge:contains("/"), .score:contains("/"), .task_score .score').first().text().trim();
+  const summaryScore = $('.task-score, #score, .total-score, .task_score').first().text().trim();
+  const winScore = $('.score_100, .score_0_100').first().text().trim();
+
+  const finalScoreText = scoreBadge || summaryScore || winScore || '';
+  console.log(`[Parser] Found potential score text: "${finalScoreText}"`);
+
+  if (finalScoreText) {
+    const parsed = parseScore(finalScoreText);
     score = parsed.score;
     maxScore = parsed.maxScore;
   }
 
-  // Determine status
-  let status: 'solved' | 'attempted' | 'not_submitted' = 'not_submitted';
-  if (score !== null) {
-    if (score >= maxScore) {
-      status = 'solved';
-    } else if (score > 0) {
-      status = 'attempted';
-    } else {
-      status = 'attempted'; // submitted but 0 score
-    }
-  }
-
   // Parse submission history
   const submissions = parseSubmissionHistory(html);
-  if (submissions.length > 0 && status === 'not_submitted') {
+  
+  // If we have submissions but couldn't find a head score, try taking from latest submission
+  if (score === null && submissions.length > 0) {
+    const latest = submissions[0]; // Latest first
+    score = latest.score;
+  }
+
+  // Determine status
+  let status: 'solved' | 'attempted' | 'not_submitted' = 'not_submitted';
+  if (submissions.length > 0) {
     status = 'attempted';
+  }
+
+  if (score !== null) {
+    if (score >= maxScore && maxScore > 0) {
+      status = 'solved';
+    } else {
+      status = 'attempted';
+    }
   }
 
   return {

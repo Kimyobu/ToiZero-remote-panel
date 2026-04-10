@@ -86,7 +86,7 @@ export const useTaskStore = create<TaskStore>()(
       },
 
       selectTask: async (taskId: string) => {
-        const { selectedTaskId, addActivity } = get();
+        const { selectedTaskId, addActivity, tasks } = get();
         if (selectedTaskId === taskId && get().taskDetail) return;
 
         set({ selectedTaskId: taskId, isLoadingDetail: true, error: null });
@@ -94,7 +94,22 @@ export const useTaskStore = create<TaskStore>()(
 
         try {
           const res = await api.get(`/tasks/${taskId}`);
-          set({ taskDetail: res.data.task, isLoadingDetail: false });
+          const taskDetail: TaskDetail = res.data.task;
+          
+          // CRITICAL FIX: If task detail couldn't find a score (Score —), 
+          // fallback to the score we already have in the sidebar (taskList).
+          // "ดึงข้อมูลเดียวกันมันก็ควรได้เหมือนกันสิ"
+          if (taskDetail.score === null || taskDetail.status === 'not_submitted') {
+            const listItem = tasks.find(t => t.id === taskId);
+            if (listItem && (listItem.score !== null || listItem.status !== 'not_submitted')) {
+              console.log(`[Store] Fallback to sidebar data for ${taskId}: score=${listItem.score}, status=${listItem.status}`);
+              taskDetail.score = listItem.score;
+              taskDetail.maxScore = listItem.maxScore;
+              taskDetail.status = listItem.status;
+            }
+          }
+
+          set({ taskDetail, isLoadingDetail: false });
         } catch (err: any) {
           set({
             error: err.response?.data?.error || err.message || 'Failed to fetch task',

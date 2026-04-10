@@ -20,6 +20,7 @@ const upload = multer({
   },
 });
 
+
 function requireSession(req: Request, res: Response): string | null {
   const cookie = req.headers['x-session-cookie'] as string;
   if (!cookie || cookie.trim() === '') {
@@ -50,6 +51,16 @@ router.post('/:taskId', upload.single('file'), async (req: Request, res: Respons
     // Step 1: GET task page to extract CSRF token
     console.log(`[Submit] Fetching task page for ${taskId} to get CSRF token...`);
     const taskResponse = await fetchWithRetry(client, `/00-pre-toi/tasks/${taskId}/description`);
+    
+    // Extract _xsrf cookie if present
+    const setCookie = taskResponse.headers['set-cookie'] || [];
+    const xsrfCookieRaw = setCookie.find(c => c.startsWith('_xsrf='));
+    let xsrfCookieValue = '';
+    if (xsrfCookieRaw) {
+      xsrfCookieValue = xsrfCookieRaw.split(';')[0];
+      console.log(`[Submit] Found session-specific XSRF cookie: ${xsrfCookieValue.substring(0, 15)}...`);
+    }
+
     const taskHtml = taskResponse.data as string;
     const taskDetail = parseTaskDetail(taskHtml, taskId);
 
@@ -61,50 +72,138 @@ router.post('/:taskId', upload.single('file'), async (req: Request, res: Respons
 
     // Step 2: Build multipart form
     const form = new FormData();
-    // THE TOI PLATFORM MIGHT USE DIFFERENT FIELD NAMES
-    // Usually 'code' or 'file'. Based on previous errors, let's ensure it's correct.
-    form.append('file', req.file.buffer, {
+    
+    const ext = req.file.originalname.split('.').pop()?.toLowerCase();
+    
+    // Map extension to CMS language strings AND specific MIME types to avoid "damage"
+    let language = 'Python 3 / CPython';
+    let mimeType = 'text/plain';
+
+    if (['cpp', 'cc', 'cxx'].includes(ext || '')) {
+      language = 'C++17 / g++';
+      mimeType = 'text/x-c++src';
+    } else if (ext === 'c') {
+      language = 'C11 / gcc';
+      mimeType = 'text/x-csrc';
+    } else if (ext === 'py') {
+      language = 'Python 3 / CPython';
+      mimeType = 'text/x-python';
+    }
+
+    // TOI/CMS requires the file field to be named as "TASK_ID.%l"
+    const fileFieldName = `${taskId}.%l`;
+    
+    // Convert buffer to string to normalize line endings and log check
+    let fileContent = req.file.buffer.toString('utf8');
+    console.log(`[Submit] Received file: ${req.file.originalname}, Size: ${req.file.size} bytes, Chars: ${fileContent.length}`);
+    console.log(`[Submit] Content Preview: ${fileContent.substring(0, 50).replace(/\n/g, '\\n')}...`);
+
+    // CMS/Grader safety: Normalize all line endings to LF (\n)
+    // This often fixes issues where a file appears truncated or "broken" due to \r characters
+    fileContent = fileContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    
+    const finalBuffer = Buffer.from(fileContent, 'utf8');
+    console.log(`[Submit] Final submission buffer size: ${finalBuffer.length} bytes`);
+
+    console.log(`[Submit] Using field name: ${fileFieldName}, Language: ${language}, MimeType: ${mimeType}`);
+    
+    form.append(fileFieldName, finalBuffer, {
       filename: req.file.originalname,
-      contentType: req.file.mimetype,
+      contentType: mimeType,
+      knownLength: finalBuffer.length // Explicitly tell form-data the length
     });
+    
+    form.append('language', language);
 
     if (taskDetail.csrfToken) {
       form.append('_xsrf', taskDetail.csrfToken);
-      form.append('csrf_token', taskDetail.csrfToken);
-      form.append('_token', taskDetail.csrfToken);
-      form.append('csrfmiddlewaretoken', taskDetail.csrfToken);
     }
 
     // Step 3: POST submission
     const submitUrl = `/00-pre-toi/tasks/${taskId}/submit`;
     console.log(`[Submit] Posting solution to: ${submitUrl}`);
+    
+    // EXTREMELY CRITICAL: Tornado requires BOTH the _xsrf form field AND the _xsrf cookie to match.
+    // We already have 00-pre-toi_login in createToiClient, but we must add the _xsrf cookie here.
+    const finalCookie = `00-pre-toi_login=${cookie}; ${xsrfCookieValue}`.trim();
+
+    const headers: any = {
+      ...form.getHeaders(),
+      'Cookie': finalCookie,
+      'Referer': `https://toi-coding.informatics.buu.ac.th/00-pre-toi/tasks/${taskId}/submissions`,
+      'Origin': 'https://toi-coding.informatics.buu.ac.th',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Cache-Control': 'no-cache',
+    };
+
+    if (taskDetail.csrfToken) {
+      headers['X-XSRF-Token'] = taskDetail.csrfToken;
+      headers['X-CSRF-Token'] = taskDetail.csrfToken;
+    }
+
     const response = await postWithRetry(client, submitUrl, form, {
-      headers: {
-        ...form.getHeaders(),
-        // We MUST NOT set manual Cookie here if using axios interceptors or headers, 
-        // but our createToiClient already sets it.
-        // Let's be explicit just in case.
-        'Referer': `https://toi-coding.informatics.buu.ac.th/00-pre-toi/tasks/${taskId}/description`,
-      },
-      maxRedirects: 0, // CMS often redirects after submission
-      validateStatus: (status: number) => status < 500,
+      headers,
+      maxRedirects: 0,
+      validateStatus: (status: number) => true,
     });
 
-    // Step 4: Invalidate cache
+    console.log(`[Submit] Status: ${response.status}`);
+
+    const isRedirect = (response.status === 302 || response.status === 303);
+    let finalResult: any = {
+      success: isRedirect || (response.status >= 200 && response.status < 300),
+      status: response.status,
+      message: 'Submitted',
+    };
+
+    // Step 4: SMART POLLING - Follow redirect and wait for score
+    if (isRedirect && response.headers.location) {
+      const redirectPath = response.headers.location;
+      console.log(`[Submit] Following redirect to: ${redirectPath}`);
+      
+      try {
+        // Fetch the submissions page to find the numeric ID
+        const subPage = await fetchWithRetry(client, redirectPath, { headers: { 'Cookie': finalCookie } });
+        const html = subPage.data as string;
+        
+        // Find numeric submission ID in HTML (e.g., data-submission="4")
+        const idMatch = html.match(/tr data-submission="(\d+)"/);
+        const numericId = idMatch ? idMatch[1] : null;
+        
+        if (numericId) {
+          console.log(`[Submit] Found numeric ID: ${numericId}. Polling for score...`);
+          
+          // Poll up to 10 times, once per second
+          for (let i = 0; i < 10; i++) {
+            await new Promise(r => setTimeout(r, 1000));
+            const pollResponse = await fetchWithRetry(client, 
+              `/00-pre-toi/tasks/${taskId}/submissions/${numericId}`, 
+              { headers: { 'Cookie': finalCookie, 'X-Requested-With': 'XMLHttpRequest' } }
+            );
+            
+            const data = pollResponse.data;
+            console.log(`[Submit] Poll ${i+1}: status=${data.status}, score=${data.public_score_message}`);
+            
+            if (data.status === 5) { // Status 5 is Evaluated
+              finalResult.isEvaluated = true;
+              finalResult.score = data.public_score_message;
+              finalResult.numericId = numericId;
+              break;
+            }
+          }
+        }
+      } catch (pollErr) {
+        console.warn(`[Submit] Polling failed, but submission might be okay:`, pollErr);
+      }
+    }
+
+    // Step 5: Force Invalidate Cache
     invalidateTaskCache(cookie, taskId);
-
-    const responseText = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-
-    // Determine success from response
-    const isSuccess = response.status >= 200 && response.status < 400;
-    const isRedirect = response.status >= 300 && response.status < 400;
+    invalidateTaskCache(cookie, 'list');
 
     return res.json({
-      success: isSuccess,
-      status: response.status,
-      redirected: isRedirect,
-      message: isSuccess ? 'Submitted successfully' : 'Submission may have failed',
-      rawResponse: responseText.substring(0, 2000), // First 2KB for debugging
+      ...finalResult,
+      rawResponse: 'Evaluation processed'
     });
   } catch (error: any) {
     return res.status(500).json({
