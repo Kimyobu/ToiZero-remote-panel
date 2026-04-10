@@ -1,9 +1,32 @@
+# Dependencies
 node_modules/
+**/node_modules/
+
+# Build outputs
 dist/
+**/dist/
+out/
+**/out/
+*.vsix
+
+# Environment & Secrets
 .env
-*.log
+**/.env
+.toi-session.json
+**/cookie
+
+# IDE & OS files
 .DS_Store
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.log
+
+# Project specific
 .cache/
 *.har
-.agent
-cookie
+.agent/
+**/tmp/

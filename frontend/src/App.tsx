@@ -6,12 +6,18 @@ import Dashboard from './pages/Dashboard';
 export default function App() {
   const { cookie, valid, validate } = useAuthStore();
 
-  // Auto-validate on startup if cookie is stored
+  // Auto-validate or sync on startup
   useEffect(() => {
-    if (cookie && !valid) {
-      validate();
-    }
-  }, []);
+    const initAuth = async () => {
+      if (cookie && !valid) {
+        await validate();
+      } else if (!valid) {
+        // Try to sync with existing session from backend (e.g. from VSCode)
+        await useAuthStore.getState().syncLocalSession();
+      }
+    };
+    initAuth();
+  }, [cookie, valid, validate]);
 
   // Handle session expired
   useEffect(() => {

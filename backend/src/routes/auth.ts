@@ -1,11 +1,41 @@
 import { Router, Request, Response } from 'express';
 import { createToiClient, fetchWithRetry, performLogin } from '../toiClient';
 import { isAuthenticated } from '../parser';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
 
+// Shared session file path
+const SESSION_FILE = path.join(process.cwd(), '.toi-session.json');
+
 // In-memory session store (cookie → validated status)
 const sessionStore = new Map<string, { valid: boolean; username?: string; validatedAt: number }>();
+
+// Load session from file on startup
+try {
+  if (fs.existsSync(SESSION_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+    if (saved.cookie && saved.username) {
+      sessionStore.set(saved.cookie, { 
+        valid: true, 
+        username: saved.username, 
+        validatedAt: Date.now() 
+      });
+      console.log(`[Auth] Loaded shared session for: ${saved.username}`);
+    }
+  }
+} catch (e) {
+  console.error('[Auth] Failed to load shared session file');
+}
+
+function saveSharedSession(cookie: string, username: string) {
+  try {
+    fs.writeFileSync(SESSION_FILE, JSON.stringify({ cookie, username, updatedAt: Date.now() }), 'utf-8');
+  } catch (e) {
+    console.error('[Auth] Failed to save shared session file');
+  }
+}
 
 export function getSession(req: Request): string | null {
   return req.headers['x-session-cookie'] as string || null;
@@ -34,6 +64,9 @@ router.post('/login', async (req: Request, res: Response) => {
     const displayName = usernameMatch?.[1]?.trim() || username;
 
     sessionStore.set(cookie, { valid, username: displayName, validatedAt: Date.now() });
+    
+    // Save for other clients (VSCode / New UI instances)
+    saveSharedSession(cookie, displayName);
 
     return res.json({ 
       success: true, 
@@ -46,6 +79,48 @@ router.post('/login', async (req: Request, res: Response) => {
       error: error.message || 'Login failed' 
     });
   }
+});
+
+// GET /api/auth/session - get current shared session (for sync)
+router.get('/session', async (req: Request, res: Response) => {
+  try {
+    if (fs.existsSync(SESSION_FILE)) {
+      const saved = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+      
+      // Check memory store
+      let cached = sessionStore.get(saved.cookie);
+      
+      // If not in memory (server restarted), try to validate it once
+      if (!cached) {
+        console.log(`[Auth/Session] Found session file but not in memory. Validating: ${saved.username}`);
+        try {
+          const client = createToiClient(saved.cookie);
+          const valRes = await fetchWithRetry(client, '/00-pre-toi', {}, 1);
+          const valid = isAuthenticated(valRes.data as string);
+          
+          if (valid) {
+            sessionStore.set(saved.cookie, { valid: true, username: saved.username, validatedAt: Date.now() });
+            cached = { valid: true, username: saved.username, validatedAt: Date.now() };
+          } else {
+            console.log('[Auth/Session] Saved session is no longer valid.');
+            if (fs.existsSync(SESSION_FILE)) fs.unlinkSync(SESSION_FILE);
+            return res.json({ hasSession: false });
+          }
+        } catch (e) {
+          return res.json({ hasSession: false });
+        }
+      }
+
+      return res.json({ 
+        hasSession: true, 
+        cookie: saved.cookie, 
+        username: saved.username,
+        isValid: !!cached?.valid
+      });
+    }
+  } catch (e) {}
+  
+  return res.json({ hasSession: false });
 });
 
 // POST /api/auth/validate - validate session cookie
@@ -101,6 +176,12 @@ router.delete('/', (req: Request, res: Response) => {
   if (cookie) {
     sessionStore.delete(cookie);
   }
+  
+  // Also clear shared file
+  if (fs.existsSync(SESSION_FILE)) {
+    try { fs.unlinkSync(SESSION_FILE); } catch(e) {}
+  }
+  
   return res.json({ success: true });
 });
 

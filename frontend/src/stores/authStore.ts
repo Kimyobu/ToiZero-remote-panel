@@ -11,6 +11,7 @@ interface AuthStore {
 
   setCookie: (cookie: string) => void;
   validate: () => Promise<boolean>;
+  syncLocalSession: () => Promise<boolean>;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
@@ -48,6 +49,19 @@ export const useAuthStore = create<AuthStore>()(
           set({ valid: false, error: msg, isValidating: false });
           return false;
         }
+      },
+
+      syncLocalSession: async () => {
+        try {
+          const res = await api.get('/auth/session');
+          if (res.data.hasSession && res.data.isValid) {
+            const { cookie, username } = res.data;
+            localStorage.setItem('toi_session_cookie', cookie);
+            set({ cookie, username, valid: true, error: null });
+            return true;
+          }
+        } catch (e) {}
+        return false;
       },
 
       login: async (username, password) => {
