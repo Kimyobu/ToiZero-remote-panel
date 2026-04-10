@@ -1,97 +1,80 @@
-# ToiZero Remote Panel
+# 🚀 ToiZero Remote Panel
 
-Custom dashboard for [TOI Coding](https://toi-coding.informatics.buu.ac.th/00-pre-toi) — replacing manual website usage with a powerful local client.
+**ToiZero Remote Panel** คือเครื่องมือช่วยจัดการและทำโจทย์สำหรับการเตรียมความพร้อมค่ายคอมพิวเตอร์โอลิมปิก (TOI) โดยเชื่อมต่อกับระบบ [TOI Coding](https://toi-coding.informatics.buu.ac.th/) เพื่อมอบประสบการณ์การทำโจทย์ที่ลื่นไหล ทันสมัย และมีประสิทธิภาพมากขึ้น
 
-## Features
+---
 
-- 📋 **Task Overview** — task list with filters, search, status colors
-- 📄 **PDF Viewer** — embedded PDF.js with fallback filename detection  
-- 📤 **Submit System** — drag & drop upload + CSRF token extraction
-- 📚 **Submission History** — per-task history with result colors
-- 📁 **Local File Integration** — auto-detect solution files from local folder
-- 📝 **Notes Editor** — markdown editor with autosave per task
-- ⚡ **Activity Feed** — last opened, submitted, refreshed
-- 🛠️ **Dev Console** — live HTTP request log
-- 🌙 **Dark Mode** — compact, keyboard-friendly UI
+## ✨ คุณสมบัติเด่น (Features)
 
-## Prerequisites
+*   **⚡ Modern Dashboard**: อินเตอร์เฟซที่สวยงาม ใช้งานง่าย พร้อมระบบคำนวณ Progress และคะแนนสะสมแบบเรียลไทม์
+*   **📂 Smart PDF Viewer**: 
+    *   ใช้ Native Browser Engine เพื่อความลื่นไหลในการซูมและค้นหาคำ
+    *   รองรับการเลือกและคัดลอกข้อความเป็นข้อความ (Text Selection)
+    *   ระบบ **Persistent State**: จดจำหน้าที่อ่านค้างไว้และระดับการซูมแยกตามรายข้อ
+    *   **Auto Discovery**: ระบบค้นหาไฟล์ PDF อัตโนมัติ (รองรับ Pattern หลากหลายเช่น `_R1`, `_R2`)
+*   **🔍 Task Management**:
+    *   ระบบกรองโจทย์ (Solved / Unsolved) และระบบค้นหาที่รวดเร็ว
+    *   ดึงข้อมูลคะแนนและรายละเอียดโจทย์จากระบบ TOI โดยตรง
+*   **🛡️ Secure Authentication**: จัดการ Session และ CSRF Token อัตโนมัติ พร้อมระบบ Logging เพื่อการตรวจสอบที่ละเอียด
+*   **⏰ Persistent Workspace**: กลับมาใช้งานต่อได้ทันทีโดยไม่ต้องตั้งค่าใหม่ ระบบจะจำว่าคุณค้างอยู่ที่โจทย์ข้อไหน
+*   **🕒 Hybrid Timing**: มีนาฬิกาบอกเวลาปัจจุบันและเวลาที่อัปเดตข้อมูลล่าสุดบน Top Bar
 
-- Node.js 18+
-- npm 8+
+---
 
-## Quick Start
+## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
 
+### Frontend
+- **React + Vite**: เพื่อความเร็วในการโหลดและการพัฒนาที่ทันสมัย
+- **Tailwind CSS**: การออกแบบที่ยืดหยุ่นและสวยงามสไตล์ Modern UI
+- **Zustand**: ระบบจัดการ State ที่เบาและมีประสิทธิภาพ พร้อมระบบ Persistence
+- **Lucide React**: ชุดไอคอนสวยงามสไตล์ Minimal
+
+### Backend
+- **TypeScript + Bunny/Express**: เซิร์ฟเวอร์ที่รวดเร็วและปลอดภัย
+- **Cheerio**: ระบบ Parsing ข้อมูลจากหน้าเว็บ TOI ที่แม่นยำ
+- **Axios**: จัดการ HTTP Request พร้อมระบบ Proxy และ Retry
+
+---
+
+## 🚀 การเริ่มต้นใช้งาน (Getting Started)
+
+### 1. การติดตั้ง (Installation)
 ```bash
-# 1. Install dependencies
+# ติดตั้ง dependencies ทั้ง frontend และ backend
 npm install
-cd backend && npm install
-cd ../frontend && npm install
+```
 
-# 2. Configure backend
-cp backend/.env.example backend/.env
-# Edit backend/.env:
-#   TOI_LOCAL_PATH=/path/to/your/TOI   ← your local TOI folder
-#   PORT=3001
+### 2. การตั้งค่า (Configuration)
+สร้างไฟล์ `.env` ในโฟลเดอร์ `backend` และตั้งค่าดังนี้:
+```env
+PORT=3001
+TOI_LOCAL_PATH=/path/to/your/pdf/folder
+```
 
-# 3. Run both servers
+### 3. รันโปรเจกต์ (Running)
+```bash
+# เริ่มต้นใช้งาน (Development Mode)
 npm run dev
 ```
 
-Frontend: http://localhost:5173  
-Backend API: http://localhost:3001
+แอปพลิเคชันจะเปิดขึ้นที่ `http://localhost:5173`
 
-## How to Get Session Cookie
+---
 
-1. Open [TOI Coding](https://toi-coding.informatics.buu.ac.th) and log in
-2. Press `F12` → Application → Cookies
-3. Copy the value of `00-pre-toi_login`
-4. Paste it in the app's Connect dialog
+## 📖 วิธีการใช้งาน
 
-## Local Folder Structure
+1.  **Login**: ใส่บัญชีผู้ใช้เดียวกับระบบ TOI Coding
+2.  **Navigation**: เลือกโจทย์จากแถบ Sidebar ด้านซ้าย
+3.  **Viewing**: อ่านโจทย์ผ่าน PDF Viewer ด้านขวา (ระบบจะจดจำตำแหน่งที่คุณเลื่อนอ่านไว้เสมอ)
+4.  **Submission**: เขียนโค้ดและส่งงานผ่านหน้าจัดการที่เตรียมไว้ให้ (Coming Soon)
 
-```
-TOI/
-├── A1-001/
-│   ├── solution.py      # auto-detected, quick submit
-│   ├── notes.md         # editable notes (autosaved)
-│   └── problem.pdf      # local PDF (optional)
-├── A1-002/
-│   ├── main.cpp
-│   └── notes.md
-```
+---
 
-Set `TOI_LOCAL_PATH` in `backend/.env` to point to this folder.
+## 📝 บันทึกการพัฒนา (Recent Updates)
+- [2026-04-10] อัปเกรด PDF Viewer เป็น Native Browser Engine เพื่อรองรับการค้นหาและคัดลอกข้อความ
+- [2026-04-10] เพิ่มระบบ Persistence จดจำสถานะหน้ากระดาษและซูมรายข้อ
+- [2026-04-10] เพิ่มระบบ Auto-fit width สำหรับ PDF สเกลอัตโนมัติให้พอดีขอบจอ
 
-## Keyboard Shortcuts
+---
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+K` | Focus search |
-| `Enter` | Open selected task |
-| `Ctrl+Enter` | Submit solution |
-| `Escape` | Close/blur |
-
-## Architecture
-
-```
-ToiZero-remote-panel/
-├── backend/               # Express backend (port 3001)
-│   └── src/
-│       ├── server.ts      # Express entry point
-│       ├── toiClient.ts   # HTTP layer (axios + cookie + throttle)
-│       ├── parser.ts      # HTML parsing (cheerio)
-│       └── routes/        # API endpoints
-│           ├── auth.ts    # Session validation
-│           ├── tasks.ts   # Task list + detail
-│           ├── pdf.ts     # PDF proxy + fallback
-│           ├── submit.ts  # Submission
-│           ├── local.ts   # Local file system
-│           └── devlog.ts  # Request log
-│
-└── frontend/              # React + Vite (port 5173)
-    └── src/
-        ├── components/    # UI components
-        ├── pages/         # Login, Dashboard
-        ├── stores/        # Zustand state (auth, tasks, settings)
-        └── api/           # Axios client
-```
+**Happy Coding!** 💻🏆
