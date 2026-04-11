@@ -4,8 +4,27 @@ import { useTaskStore } from '../stores/taskStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { 
   Zap, RefreshCw, LogOut, Clock, 
-  ToggleLeft, ToggleRight, Terminal
+  ToggleLeft, ToggleRight, Terminal, Loader2
 } from 'lucide-react';
+import { useSubmissionStore } from '../stores/submissionStore';
+
+/**
+ * Global submission indicator that reacts to any client's submission
+ */
+function SubmissionIndicator() {
+  const { isSubmitting, submittingTaskId } = useSubmissionStore();
+
+  if (!isSubmitting) return null;
+
+  return (
+    <div className="flex items-center gap-2 px-2.5 py-1 bg-toi-accent/20 border border-toi-accent/30 rounded-full animate-pulse shrink-0">
+      <Loader2 className="w-3 h-3 text-toi-accent animate-spin" />
+      <span className="text-[10px] font-bold text-toi-accent uppercase tracking-wider">
+        Submitting {submittingTaskId}
+      </span>
+    </div>
+  );
+}
 
 /**
  * Isolated Clock component to prevent the entire TopBar from re-rendering every second.
@@ -128,6 +147,9 @@ export default function TopBar() {
         )}
         <IsolatedClock />
       </div>
+
+      {/* Global Submission Status */}
+      <SubmissionIndicator />
 
       <div className="w-px h-4 bg-toi-border shrink-0" />
 

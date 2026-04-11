@@ -2,6 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import authRouter from './routes/auth';
 import tasksRouter from './routes/tasks';
 import pdfRouter from './routes/pdf';
@@ -10,6 +12,24 @@ import localRouter from './routes/local';
 import devlogRouter from './routes/devlog';
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log(`\x1b[32m[Socket] Client connected: ${socket.id}\x1b[0m`);
+  
+  socket.on('disconnect', () => {
+    console.log(`\x1b[33m[Socket] Client disconnected: ${socket.id}\x1b[0m`);
+  });
+});
+
+export { io };
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
@@ -65,7 +85,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`\x1b[34m[ToiZero Backend] Running on http://localhost:${PORT}\x1b[0m`);
   if (process.env.TOI_LOCAL_PATH) {
     console.log(`\x1b[34m[ToiZero Backend] Local TOI path: ${process.env.TOI_LOCAL_PATH}\x1b[0m`);

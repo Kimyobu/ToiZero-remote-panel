@@ -4,6 +4,7 @@ import FormData from 'form-data';
 import { createToiClient, fetchWithRetry, postWithRetry } from '../toiClient';
 import { parseTaskDetail } from '../parser';
 import { invalidateTaskCache } from './tasks';
+import { io } from '../server';
 
 const router = Router();
 const upload = multer({
@@ -36,12 +37,17 @@ router.post('/:taskId', upload.single('file'), async (req: Request, res: Respons
   if (!cookie) return;
 
   const { taskId } = req.params;
+  
+  // Broadcast that a submission has started
+  io.emit('submission:started', { taskId });
 
   if (!/^[A-Z]\d+-\d{3}$/.test(taskId)) {
+    io.emit('submission:finished', { taskId, success: false, error: 'Invalid task ID format' });
     return res.status(400).json({ error: 'Invalid task ID format' });
   }
 
   if (!req.file) {
+    io.emit('submission:finished', { taskId, success: false, error: 'No file uploaded' });
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
@@ -201,11 +207,15 @@ router.post('/:taskId', upload.single('file'), async (req: Request, res: Respons
     invalidateTaskCache(cookie, taskId);
     invalidateTaskCache(cookie, 'list');
 
+    // Broadcast completion
+    io.emit('submission:finished', { taskId, ...finalResult });
+
     return res.json({
       ...finalResult,
       rawResponse: 'Evaluation processed'
     });
   } catch (error: any) {
+    io.emit('submission:finished', { taskId, success: false, error: error.message });
     return res.status(500).json({
       success: false,
       error: error.message || 'Submission failed',

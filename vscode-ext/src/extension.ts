@@ -1,20 +1,42 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
 import * as path from 'path';
+import { io, Socket } from 'socket.io-client';
 import { TaskDecorationProvider } from './providers/TaskDecorationProvider';
 
 // The port confirmed by the user
 const BACKEND_URL = 'http://localhost:3001/api';
+const SOCKET_URL = 'http://localhost:3001';
 let sessionCookie: string | null = null;
 let currentUsername: string | null = null;
 let decorationProvider: TaskDecorationProvider;
 let statusBarItem: vscode.StatusBarItem;
+let socket: Socket | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage('🚀 ToiZero Extension Active!');
     
     decorationProvider = new TaskDecorationProvider(BACKEND_URL);
     context.subscriptions.push(vscode.window.registerFileDecorationProvider(decorationProvider));
+
+    // Initialize Socket Connection
+    socket = io(SOCKET_URL);
+    socket.on('submission:started', (data: { taskId: string }) => {
+        vscode.window.setStatusBarMessage(`$(sync~spin) ToiZero: Submitting ${data.taskId}...`, 10000);
+    });
+
+    socket.on('submission:finished', (data: { taskId: string, score?: string, success: boolean, error?: string }) => {
+        decorationProvider.refresh();
+        if (data.success) {
+            vscode.window.setStatusBarMessage(`$(check) ToiZero: ${data.taskId} evaluated! Score: ${data.score}`, 5000);
+            if (data.score === '100') {
+                vscode.window.showInformationMessage(`🎉 Task ${data.taskId} passed with 100 points!`);
+            }
+        } else {
+            vscode.window.setStatusBarMessage(`$(error) ToiZero: ${data.taskId} submission failed`, 5000);
+            vscode.window.showErrorMessage(`❌ Submission failed for ${data.taskId}: ${data.error || 'Unknown error'}`);
+        }
+    });
 
     // Create status bar item
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);

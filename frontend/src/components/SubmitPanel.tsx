@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTaskStore } from '../stores/taskStore';
+import { useSubmissionStore } from '../stores/submissionStore';
 import api from '../api/client';
 import { Upload, Loader2, CheckCircle, XCircle, FileCode, Zap, Eye } from 'lucide-react';
 
@@ -16,12 +17,22 @@ interface SubmitResult {
 
 export default function SubmitPanel() {
   const { selectedTaskId, taskDetail, addActivity, fetchTasks } = useTaskStore();
+  const { isSubmitting: globalIsSubmitting, submittingTaskId, lastResult } = useSubmissionStore();
   const [file, setFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localIsSubmitting, setLocalIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [showRaw, setShowRaw] = useState(false);
   const [localSolution, setLocalSolution] = useState<{content: string; filename: string} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync global submission results to local UI
+  useEffect(() => {
+    if (lastResult && lastResult.taskId === selectedTaskId) {
+      setResult(lastResult);
+    }
+  }, [lastResult, selectedTaskId]);
+
+  const isSubmitting = localIsSubmitting || (globalIsSubmitting && submittingTaskId === selectedTaskId);
   const dropRef = useRef<HTMLDivElement>(null);
 
   // Load local solution if available
@@ -67,7 +78,7 @@ export default function SubmitPanel() {
   const handleSubmit = async () => {
     if (!selectedTaskId || (!file && !localSolution)) return;
 
-    setIsSubmitting(true);
+    setLocalIsSubmitting(true);
     setResult(null);
 
     try {
@@ -124,7 +135,7 @@ export default function SubmitPanel() {
       const raw = err.response?.data?.rawResponse;
       setResult({ success: false, message: msg, rawResponse: raw });
     } finally {
-      setIsSubmitting(false);
+      setLocalIsSubmitting(false);
     }
   };
 

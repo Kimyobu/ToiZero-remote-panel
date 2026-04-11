@@ -1,10 +1,17 @@
 import React, { useEffect } from 'react';
 import { useAuthStore } from './stores/authStore';
+import { useSubmissionStore } from './stores/submissionStore';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
 export default function App() {
   const { cookie, valid, validate } = useAuthStore();
+  const initSocket = useSubmissionStore(s => s.initSocket);
+
+  // Initialize Socket.io
+  useEffect(() => {
+    initSocket();
+  }, [initSocket]);
 
   // Auto-validate or sync on startup
   useEffect(() => {

@@ -165,6 +165,15 @@
   animation: successPulse 0.5s cubic-bezier(0.24, 0, 0.38, 1) forwards;
 }
 
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.05); }
+}
+
+.animate-pulse-soft {
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
 /* PDF.js canvas */
 .pdf-canvas {
   display: block;
