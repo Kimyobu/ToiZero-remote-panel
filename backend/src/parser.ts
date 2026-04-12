@@ -242,10 +242,17 @@ export function parseTaskDetail(html: string, taskId: string): TaskDetail {
 
   // Extract PDF link
   let pdfUrl: string | null = null;
+  const baseUrl = 'https://toi-coding.informatics.buu.ac.th';
+  const pageUrl = `${baseUrl}/00-pre-toi/tasks/${taskId}/description`;
+
   $('a[href$=".pdf"], a[href*=".pdf"]').each((_, el) => {
     const href = $(el).attr('href');
     if (href && !pdfUrl) {
-      pdfUrl = href.startsWith('http') ? href : `https://toi-coding.informatics.buu.ac.th${href}`;
+      try {
+        pdfUrl = new URL(href, pageUrl).href;
+      } catch (e) {
+        pdfUrl = href.startsWith('http') ? href : `${baseUrl}${href.startsWith('/') ? '' : '/'}${href}`;
+      }
     }
   });
 
@@ -369,12 +376,23 @@ export function extractPdfLinks(html: string): string[] {
   const $ = cheerio.load(html);
   const links: string[] = [];
   
+  const baseUrl = 'https://toi-coding.informatics.buu.ac.th';
+  // Note: this function doesn't know the taskId, so we can't perfectly resolve relative paths 
+  // without context. But usually these are root-relative or absolute.
+  
   $('a[href$=".pdf"], a[href*=".pdf"]').each((_, el) => {
     const href = $(el).attr('href');
     if (href) {
-      const fullUrl = href.startsWith('http') 
-        ? href 
-        : `https://toi-coding.informatics.buu.ac.th${href}`;
+      let fullUrl = '';
+      try {
+        // If it's a relative path starting with '..', it might be tricky without pageUrl
+        // But we'll try to handle basic cases.
+        fullUrl = new URL(href, baseUrl).href;
+      } catch (e) {
+        fullUrl = href.startsWith('http') 
+          ? href 
+          : `${baseUrl}${href.startsWith('/') ? '' : '/'}${href}`;
+      }
       if (!links.includes(fullUrl)) links.push(fullUrl);
     }
   });

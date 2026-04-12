@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import PDFViewer from './PDFViewer';
-import { FileQuestion, Link, X, ExternalLink, BookOpen, FileCode } from 'lucide-react';
+import { FileQuestion, Link, X, ExternalLink, BookOpen, FileCode, FileText } from 'lucide-react';
 
 export default function MainContent() {
   const { selectedTaskId, taskDetail, isLoadingDetail } = useTaskStore();
@@ -99,17 +99,32 @@ export default function MainContent() {
           </button>
         )}
 
-        {taskDetail?.pdfUrl && (
+        {/* External Links */}
+        <div className="flex items-center gap-3 border-l border-toi-border ml-2 pl-4">
           <a
-            href={taskDetail.pdfUrl}
+            href={`https://toi-coding.informatics.buu.ac.th/00-pre-toi/tasks/${selectedTaskId}/description`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-toi-muted hover:text-toi-text transition-colors"
-            title="Open PDF in new tab"
+            className="text-toi-muted hover:text-toi-text transition-colors flex items-center gap-1.5 group"
+            title="Open Task Statement (Description)"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
+            <BookOpen className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] uppercase font-bold tracking-widest hidden sm:inline">Statement</span>
           </a>
-        )}
+
+          {taskDetail?.pdfUrl && (
+            <a
+              href={taskDetail.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-toi-muted hover:text-toi-text transition-colors flex items-center gap-1.5 group"
+              title="Open Task PDF"
+            >
+              <FileText className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] uppercase font-bold tracking-widest hidden sm:inline">PDF</span>
+            </a>
+          )}
+        </div>
       </div>
 
       {/* PDF Viewer Area */}
