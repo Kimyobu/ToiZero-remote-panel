@@ -7,26 +7,50 @@ dist/
 **/dist/
 out/
 **/out/
+build/
+**/build/
 *.vsix
 
-# Environment & Secrets
-.env
-**/.env
-.toi-session.json
-**/cookie
+# Logs and debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.har
 
-# IDE & OS files
+# OS files
 .DS_Store
-.vscode/
+Thumbs.db
+.Spotlight-V100
+.Trashes
+
+# IDE & Editor files
+.vscode/*
 !.vscode/extensions.json
 !.vscode/launch.json
 !.vscode/settings.json
 .idea/
 *.swp
-*.log
+*.swo
+
+# Environment & Secrets
+.env
+**/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.toi-session.json
+cookie
+**/cookie
 
 # Project specific
 .cache/
-*.har
 .agent/
+.agents/
 **/tmp/
+structure.txt
+
+# Context generation artifacts (Auto-generated)
+toizero-context-pro/.context-advanced.txt
+toizero-context-pro/dependency-graph.json
