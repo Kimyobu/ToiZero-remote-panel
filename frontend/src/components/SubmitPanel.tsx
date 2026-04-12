@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import { useSubmissionStore } from '../stores/submissionStore';
 import api from '../api/client';
-import { Upload, Loader2, CheckCircle, XCircle, FileCode, Zap, Eye } from 'lucide-react';
+import { useCodeStore } from '../stores/codeStore';
+import { Upload, Loader2, CheckCircle, XCircle, FileCode, Zap, Eye, Save } from 'lucide-react';
 
 const ALLOWED_EXTENSIONS = ['.py', '.cpp', '.c', '.java', '.pas'];
 
@@ -23,6 +24,11 @@ export default function SubmitPanel() {
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [showRaw, setShowRaw] = useState(false);
   const [localSolution, setLocalSolution] = useState<{content: string; filename: string} | null>(null);
+  
+  const { codes, languages } = useCodeStore();
+  const editorCode = codes[selectedTaskId || ''];
+  const editorLang = languages[selectedTaskId || ''] || 'cpp';
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync global submission results to local UI
@@ -76,7 +82,7 @@ export default function SubmitPanel() {
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   const handleSubmit = async () => {
-    if (!selectedTaskId || (!file && !localSolution)) return;
+    if (!selectedTaskId || (!file && !localSolution && !editorCode)) return;
 
     setLocalIsSubmitting(true);
     setResult(null);
@@ -86,6 +92,11 @@ export default function SubmitPanel() {
 
       if (file) {
         formData.append('file', file);
+      } else if (editorCode) {
+        // Submit code from the web editor
+        const ext = editorLang === 'cpp' ? 'cpp' : editorLang === 'python' ? 'py' : 'cpp';
+        const blob = new Blob([editorCode], { type: 'text/plain' });
+        formData.append('file', blob, `solution.${ext}`);
       } else if (localSolution) {
         // Create file from local solution content
         const blob = new Blob([localSolution.content], { type: 'text/plain' });
@@ -143,7 +154,7 @@ export default function SubmitPanel() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        if (selectedTaskId && !isSubmitting && (file || localSolution)) {
+        if (selectedTaskId && !isSubmitting && (file || localSolution || editorCode)) {
           handleSubmit();
         }
       }
@@ -187,6 +198,29 @@ export default function SubmitPanel() {
               <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Submitting...</>
             ) : (
               <><Zap className="w-3.5 h-3.5" /> Quick Submit</>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Editor code info (if exists) */}
+      {editorCode && !file && (
+        <div className="card p-3 border-toi-accent/20 bg-toi-accent/5">
+          <div className="flex items-center gap-2 mb-2">
+            <FileCode className="w-3.5 h-3.5 text-toi-accent" />
+            <span className="text-xs font-medium text-toi-text">Web Editor Content</span>
+            <span className="text-xs text-toi-muted ml-auto">{editorLang}</span>
+          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="btn-primary w-full justify-center disabled:opacity-50"
+            id="submit-btn"
+          >
+            {isSubmitting ? (
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Submitting...</>
+            ) : (
+              <><Zap className="w-3.5 h-3.5" /> Submit Editor Code</>
             )}
           </button>
         </div>

@@ -9,7 +9,11 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export default function Dashboard() {
   const { fetchTasks, fetchLocalInfo, selectedTaskId, selectTask } = useTaskStore();
-  const { autoRefreshEnabled, autoRefreshInterval } = useSettingsStore();
+  const { 
+    autoRefreshEnabled, autoRefreshInterval,
+    isSidebarOpen, toggleSidebar,
+    mainContentView, setMainContentView,
+  } = useSettingsStore();
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Initial load
@@ -44,6 +48,31 @@ export default function Dashboard() {
       document.getElementById('task-search-input')?.focus();
     }
 
+    // Ctrl+B — toggle sidebar
+    if (e.ctrlKey && e.key === 'b') {
+      e.preventDefault();
+      toggleSidebar();
+    }
+
+    // Ctrl+\ — toggle split view
+    if (e.ctrlKey && e.key === '\\') {
+      e.preventDefault();
+      setMainContentView(mainContentView === 'split' ? 'pdf' : 'split');
+    }
+
+    // Alt+1/2/3 — switch view modes
+    if (e.altKey && (e.key === '1' || e.key === '2' || e.key === '3')) {
+      e.preventDefault();
+      const modes: Record<string, 'pdf' | 'split' | 'code'> = { '1': 'pdf', '2': 'split', '3': 'code' };
+      setMainContentView(modes[e.key]);
+    }
+
+    // Ctrl+S — trigger manual save to local
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent('toi:save-local'));
+    }
+
     // Ctrl+Enter — trigger submit
     if (e.ctrlKey && e.key === 'Enter') {
       e.preventDefault();
@@ -54,7 +83,7 @@ export default function Dashboard() {
     if (e.key === 'Escape') {
       (document.activeElement as HTMLElement)?.blur();
     }
-  }, []);
+  }, [toggleSidebar, mainContentView, setMainContentView]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -77,12 +106,16 @@ export default function Dashboard() {
       </ErrorBoundary>
       
       <div className="flex flex-1 overflow-hidden relative selection:bg-toi-accent/30">
-        {/* Sidebar - Adaptive hidden on mobile if not needed */}
-        <div className="hidden md:flex md:flex-row h-full overflow-hidden flex-shrink-0">
-          <ErrorBoundary name="Sidebar">
-            <Sidebar />
-          </ErrorBoundary>
-          <div className="resize-handle hover:bg-toi-accent/40 active:bg-toi-accent/60 transition-colors" />
+        {/* Sidebar - Conditional visibility */}
+        <div className={`h-full overflow-hidden flex-shrink-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'w-[260px] opacity-100' : 'w-0 opacity-0 pointer-events-none'
+        }`}>
+          <div className="h-full flex flex-row">
+            <ErrorBoundary name="Sidebar">
+              <Sidebar />
+            </ErrorBoundary>
+            <div className="resize-handle hover:bg-toi-accent/40 active:bg-toi-accent/60 transition-colors" />
+          </div>
         </div>
 
         {/* Main Content Area */}

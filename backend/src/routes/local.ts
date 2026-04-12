@@ -177,6 +177,42 @@ router.get('/solution/:taskId', (req: Request, res: Response) => {
   }
 });
 
+// PUT /api/local/solution/:taskId - save solution file
+router.put('/solution/:taskId', (req: Request, res: Response) => {
+  const basePath = requireLocalPath(res);
+  if (!basePath) return;
+
+  const { taskId } = req.params;
+  const { content, language } = req.body;
+
+  if (typeof content !== 'string') {
+    return res.status(400).json({ error: 'content must be a string' });
+  }
+
+  const taskDir = getTaskDir(basePath, taskId);
+  let solutionFile = findSolutionFile(taskDir);
+
+  // If no solution file exists, create a default one based on language
+  if (!solutionFile) {
+    const extMap: Record<string, string> = {
+      cpp: '.cpp',
+      python: '.py',
+      java: '.java',
+      c: '.c',
+    };
+    const ext = extMap[language] || '.cpp';
+    solutionFile = path.join(taskDir, `solution${ext}`);
+  }
+
+  try {
+    fs.mkdirSync(taskDir, { recursive: true });
+    fs.writeFileSync(solutionFile, content, 'utf-8');
+    return res.json({ success: true, filename: path.basename(solutionFile) });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/local/config - get current local path config
 router.get('/config', (req: Request, res: Response) => {
   return res.json({

@@ -1,12 +1,24 @@
 import React, { useEffect } from 'react';
 import { useAuthStore } from './stores/authStore';
 import { useSubmissionStore } from './stores/submissionStore';
+import { useSettingsStore } from './stores/settingsStore';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
 export default function App() {
   const { cookie, valid, validate } = useAuthStore();
   const initSocket = useSubmissionStore(s => s.initSocket);
+  const theme = useSettingsStore(s => s.theme);
+
+  // Sync theme to root element
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
 
   // Initialize Socket.io
   useEffect(() => {

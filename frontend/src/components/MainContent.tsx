@@ -1,13 +1,51 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import PDFViewer from './PDFViewer';
-import { FileQuestion, Link, X, ExternalLink, BookOpen, FileCode, FileText } from 'lucide-react';
+import CodeEditor from './CodeEditor';
+import { 
+  FileQuestion, Link, X, ExternalLink, BookOpen, 
+  FileCode, FileText, Columns, Square, Maximize2 
+} from 'lucide-react';
+import { useSettingsStore } from '../stores/settingsStore';
 
 export default function MainContent() {
   const { selectedTaskId, taskDetail, isLoadingDetail } = useTaskStore();
+  const { 
+    mainContentView, setMainContentView, 
+    mainContentSplitRatio, setMainContentSplitRatio 
+  } = useSettingsStore();
+
   const [manualUrl, setManualUrl] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [appliedUrl, setAppliedUrl] = useState<string | undefined>();
+  const isResizing = useRef(false);
+
+  // Resize handler for split view
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      const container = document.getElementById('main-content-container');
+      if (!container) return;
+      
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = (x / rect.width) * 100;
+      setMainContentSplitRatio(ratio);
+    };
+
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [setMainContentSplitRatio]);
 
   // Reset manual URL when task changes
   useEffect(() => {
@@ -99,6 +137,31 @@ export default function MainContent() {
           </button>
         )}
 
+        {/* View Mode Controls */}
+        <div className="flex items-center gap-1 bg-toi-card/50 rounded-lg p-0.5 border border-toi-border/50 ml-2">
+          <button
+            onClick={() => setMainContentView('pdf')}
+            className={`p-1 rounded ${mainContentView === 'pdf' ? 'bg-toi-accent text-white shadow-sm' : 'text-toi-muted hover:text-toi-text'}`}
+            title="PDF View"
+          >
+            <BookOpen className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setMainContentView('split')}
+            className={`p-1 rounded ${mainContentView === 'split' ? 'bg-toi-accent text-white shadow-sm' : 'text-toi-muted hover:text-toi-text'}`}
+            title="Split View"
+          >
+            <Columns className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setMainContentView('code')}
+            className={`p-1 rounded ${mainContentView === 'code' ? 'bg-toi-accent text-white shadow-sm' : 'text-toi-muted hover:text-toi-text'}`}
+            title="Code View"
+          >
+            <FileCode className="w-3 h-3" />
+          </button>
+        </div>
+
         {/* External Links */}
         <div className="flex items-center gap-3 border-l border-toi-border ml-2 pl-4">
           <a
@@ -127,8 +190,8 @@ export default function MainContent() {
         </div>
       </div>
 
-      {/* PDF Viewer Area */}
-      <div className="flex-1 overflow-hidden relative">
+      {/* Content Area */}
+      <div id="main-content-container" className="flex-1 flex overflow-hidden relative">
         {isLoadingDetail ? (
           <div className="absolute inset-0 p-4 space-y-4 animate-pulse">
             <div className="h-8 bg-toi-surface rounded w-1/3" />
@@ -136,7 +199,39 @@ export default function MainContent() {
             <div className="h-6 bg-toi-surface rounded w-2/3" />
           </div>
         ) : (
-          <PDFViewer taskId={selectedTaskId} manualUrl={appliedUrl} />
+          <>
+            {/* PDF Section */}
+            {(mainContentView === 'pdf' || mainContentView === 'split') && (
+              <div 
+                className="h-full overflow-hidden"
+                style={{ width: mainContentView === 'split' ? `${mainContentSplitRatio}%` : '100%' }}
+              >
+                <PDFViewer taskId={selectedTaskId} manualUrl={appliedUrl} />
+              </div>
+            )}
+
+            {/* Resize Handle */}
+            {mainContentView === 'split' && (
+              <div 
+                className="resize-handle active:bg-toi-accent" 
+                onMouseDown={(e) => {
+                  isResizing.current = true;
+                  document.body.style.cursor = 'col-resize';
+                  document.body.style.userSelect = 'none';
+                }}
+              />
+            )}
+
+            {/* Code Section */}
+            {(mainContentView === 'code' || mainContentView === 'split') && (
+              <div 
+                className="h-full overflow-hidden"
+                style={{ flex: mainContentView === 'split' ? '1 1 0%' : '1 1 0%', width: mainContentView === 'code' ? '100%' : 'auto' }}
+              >
+                <CodeEditor taskId={selectedTaskId} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

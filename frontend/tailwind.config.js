@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -8,18 +9,18 @@ export default {
     extend: {
       colors: {
         toi: {
-          bg: '#0a0e1a',
-          surface: '#0f1629',
-          card: '#141c35',
-          border: '#1e2d52',
-          accent: '#3b82f6',
-          'accent-hover': '#2563eb',
-          green: '#22c55e',
-          yellow: '#eab308',
-          red: '#ef4444',
-          muted: '#4b5a7a',
-          text: '#e2e8f0',
-          'text-muted': '#8493b8',
+          bg: 'rgb(var(--color-toi-bg) / <alpha-value>)',
+          surface: 'rgb(var(--color-toi-surface) / <alpha-value>)',
+          card: 'rgb(var(--color-toi-card) / <alpha-value>)',
+          border: 'rgb(var(--color-toi-border) / <alpha-value>)',
+          accent: 'rgb(var(--color-toi-accent) / <alpha-value>)',
+          'accent-hover': 'rgb(var(--color-toi-accent-hover) / <alpha-value>)',
+          green: 'rgb(var(--color-toi-green) / <alpha-value>)',
+          yellow: 'rgb(var(--color-toi-yellow) / <alpha-value>)',
+          red: 'rgb(var(--color-toi-red) / <alpha-value>)',
+          muted: 'rgb(var(--color-toi-muted) / <alpha-value>)',
+          text: 'rgb(var(--color-toi-text) / <alpha-value>)',
+          'text-muted': 'rgb(var(--color-toi-text-muted) / <alpha-value>)',
         }
       },
       fontFamily: {

@@ -4,7 +4,7 @@ import { useTaskStore } from '../stores/taskStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { 
   Zap, RefreshCw, LogOut, Clock, 
-  ToggleLeft, ToggleRight, Terminal, Loader2
+  ToggleLeft, ToggleRight, Terminal, Loader2, Moon, Sun, PanelLeft, Layout, Columns, Monitor
 } from 'lucide-react';
 import { useSubmissionStore } from '../stores/submissionStore';
 
@@ -50,7 +50,10 @@ export default function TopBar() {
   const { username, logout } = useAuthStore();
   const { fetchTasks, isLoadingList, lastRefreshed, tasks } = useTaskStore();
   const { 
-    autoRefreshEnabled, autoRefreshInterval, toggleAutoRefresh, devMode, toggleDevMode 
+    autoRefreshEnabled, autoRefreshInterval, toggleAutoRefresh, 
+    devMode, toggleDevMode, theme, toggleTheme,
+    isSidebarOpen, toggleSidebar,
+    mainContentView, setMainContentView
   } = useSettingsStore();
   const [isOnline, setIsOnline] = React.useState(navigator.onLine);
 
@@ -97,10 +100,17 @@ export default function TopBar() {
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-toi-surface/90 border-b border-toi-border glass shrink-0 z-50">
-      {/* Logo + Connection Status */}
+      {/* Logo + Sidebar Toggle */}
       <div className="flex items-center gap-2.5 shrink-0">
+        <button
+          onClick={toggleSidebar}
+          className={`p-1.5 rounded-md transition-all hover:bg-toi-card active:scale-95 ${isSidebarOpen ? 'text-toi-accent bg-toi-accent/5' : 'text-toi-muted'}`}
+          title="Toggle Sidebar (Ctrl+B)"
+        >
+          <PanelLeft className="w-4 h-4" />
+        </button>
         <div className="relative">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-toi-accent to-blue-600 flex items-center justify-center shadow shadow-toi-accent/30 active-scale">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-toi-accent to-blue-600 flex items-center justify-center shadow shadow-toi-accent/30">
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
           <div 
@@ -134,6 +144,35 @@ export default function TopBar() {
           </div>
         </div>
       )}
+      <div className="w-px h-4 bg-toi-border/50 shrink-0" />
+
+      {/* View Mode Switcher */}
+      <div className="flex items-center bg-toi-card/30 p-0.5 rounded-lg border border-toi-border/30 gap-0.5">
+        <button
+          onClick={() => setMainContentView('pdf')}
+          className={`p-1 rounded transition-all flex items-center gap-1.5 px-2 ${mainContentView === 'pdf' ? 'bg-toi-accent text-white shadow-sm' : 'text-toi-muted hover:text-toi-text'}`}
+          title="Statement Only (Alt+1)"
+        >
+          <Monitor className="w-3.5 h-3.5" />
+          <span className="text-[10px] font-bold hidden xl:inline">PDF</span>
+        </button>
+        <button
+          onClick={() => setMainContentView('split')}
+          className={`p-1 rounded transition-all flex items-center gap-1.5 px-2 ${mainContentView === 'split' ? 'bg-toi-accent text-white shadow-sm' : 'text-toi-muted hover:text-toi-text'}`}
+          title="Split View (Alt+2 / Ctrl+\)"
+        >
+          <Columns className="w-3.5 h-3.5" />
+          <span className="text-[10px] font-bold hidden xl:inline">SPLIT</span>
+        </button>
+        <button
+          onClick={() => setMainContentView('code')}
+          className={`p-1 rounded transition-all flex items-center gap-1.5 px-2 ${mainContentView === 'code' ? 'bg-toi-accent text-white shadow-sm' : 'text-toi-muted hover:text-toi-text'}`}
+          title="Editor Only (Alt+3)"
+        >
+          <Layout className="w-3.5 h-3.5" />
+          <span className="text-[10px] font-bold hidden xl:inline">CODE</span>
+        </button>
+      </div>
 
       <div className="flex-1" />
 
@@ -180,6 +219,16 @@ export default function TopBar() {
         id="refresh-btn"
       >
         <RefreshCw className={`w-3.5 h-3.5 ${isLoadingList ? 'animate-spin-slow' : ''}`} />
+      </button>
+
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="text-toi-muted hover:text-toi-text transition-colors p-1 rounded-md hover:bg-toi-card"
+        title={`Toggle theme (Current: ${theme})`}
+        id="theme-toggle-btn"
+      >
+        {theme === 'dark' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
       </button>
 
       {/* Dev mode */}

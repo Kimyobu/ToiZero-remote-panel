@@ -3,6 +3,36 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-toi-bg: 248 250 252;
+    --color-toi-surface: 255 255 255;
+    --color-toi-card: 241 245 249;
+    --color-toi-border: 226 232 240;
+    --color-toi-accent: 59 130 246;
+    --color-toi-accent-hover: 37 99 235;
+    --color-toi-green: 34 197 94;
+    --color-toi-yellow: 234 179 8;
+    --color-toi-red: 239 68 68;
+    --color-toi-muted: 148 163 184;
+    --color-toi-text: 30 41 59;
+    --color-toi-text-muted: 100 116 139;
+  }
+
+  .dark {
+    --color-toi-bg: 10 14 26;
+    --color-toi-surface: 15 22 41;
+    --color-toi-card: 20 28 53;
+    --color-toi-border: 30 45 82;
+    --color-toi-accent: 59 130 246;
+    --color-toi-accent-hover: 37 99 235;
+    --color-toi-green: 34 197 94;
+    --color-toi-yellow: 234 179 8;
+    --color-toi-red: 239 68 68;
+    --color-toi-muted: 75 90 122;
+    --color-toi-text: 226 232 240;
+    --color-toi-text-muted: 132 147 184;
+  }
+
   * {
     box-sizing: border-box;
   }
