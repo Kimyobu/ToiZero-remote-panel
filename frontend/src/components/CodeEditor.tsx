@@ -455,7 +455,7 @@ export default function CodeEditor({ taskId }: CodeEditorProps) {
             parameterHints: {
               enabled: true
             },
-            wordBasedSuggestions: true,
+            wordBasedSuggestions: 'allDocuments',
             formatOnPaste: true,
             formatOnType: true,
           }}
