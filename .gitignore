@@ -54,3 +54,5 @@ structure.txt
 # Context generation artifacts (Auto-generated)
 toizero-context-pro/.context-advanced.txt
 toizero-context-pro/dependency-graph.json
+.PLAN.md
+.UPDATE.md

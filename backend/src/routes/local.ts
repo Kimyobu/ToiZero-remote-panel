@@ -62,7 +62,7 @@ router.get('/tasks', (req: Request, res: Response) => {
         const taskDir = path.join(basePath, e.name);
         const solutionFile = findSolutionFile(taskDir);
         const notesPath = path.join(taskDir, 'notes.md');
-        const pdfPath = path.join(taskDir, 'problem.pdf');
+        const pdfPath = path.join(taskDir, `${e.name}.pdf`);
 
         return {
           taskId: e.name,
@@ -213,6 +213,7 @@ router.put('/solution/:taskId', (req: Request, res: Response) => {
   }
 });
 
+
 // GET /api/local/config - get current local path config
 router.get('/config', (req: Request, res: Response) => {
   return res.json({
@@ -220,6 +221,84 @@ router.get('/config', (req: Request, res: Response) => {
     configured: !!LOCAL_BASE,
     exists: LOCAL_BASE ? fs.existsSync(LOCAL_BASE) : false,
   });
+});
+
+// POST /api/local/pdf/:taskId - save PDF blob to local workspace
+router.post('/pdf/:taskId', (req: Request, res: Response) => {
+  const basePath = requireLocalPath(res);
+  if (!basePath) return;
+
+  const { taskId } = req.params;
+  if (!/^[A-Z]\d+-\d{3}$/.test(taskId)) {
+    return res.status(400).json({ error: 'Invalid task ID format' });
+  }
+
+  const taskDir = getTaskDir(basePath, taskId);
+  const pdfPath = path.join(taskDir, `${taskId}.pdf`);
+
+  try {
+    fs.mkdirSync(taskDir, { recursive: true });
+
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => {
+      try {
+        const buffer = Buffer.concat(chunks);
+        fs.writeFileSync(pdfPath, buffer);
+        return res.json({ success: true, path: pdfPath });
+      } catch (err: any) {
+        return res.status(500).json({ error: err.message });
+      }
+    });
+    req.on('error', (err: Error) => {
+      return res.status(500).json({ error: err.message });
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/local/pdf/:taskId - serve locally cached PDF file
+router.get('/pdf/:taskId', (req: Request, res: Response) => {
+  const basePath = requireLocalPath(res);
+  if (!basePath) return;
+
+  const { taskId } = req.params;
+  if (!/^[A-Z]\d+-\d{3}$/.test(taskId)) {
+    return res.status(400).json({ error: 'Invalid task ID format' });
+  }
+
+  const pdfPath = path.join(getTaskDir(basePath, taskId), `${taskId}.pdf`);
+
+  if (!fs.existsSync(pdfPath)) {
+    return res.status(404).json({ error: 'PDF not cached locally yet' });
+  }
+
+  try {
+    const stat = fs.statSync(pdfPath);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${taskId}.pdf"`,
+      'Content-Length': stat.size.toString(),
+      'Cache-Control': 'private, max-age=86400',
+    });
+    fs.createReadStream(pdfPath).pipe(res);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/local/pdf/:taskId/exists - check if PDF is locally cached
+router.get('/pdf/:taskId/exists', (req: Request, res: Response) => {
+  const basePath = requireLocalPath(res);
+  if (!basePath) return;
+
+  const { taskId } = req.params;
+  const pdfPath = path.join(getTaskDir(basePath, taskId), `${taskId}.pdf`);
+  const exists = fs.existsSync(pdfPath);
+  const size = exists ? fs.statSync(pdfPath).size : 0;
+
+  return res.json({ exists, size, path: exists ? pdfPath : null });
 });
 
 export default router;
