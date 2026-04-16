@@ -12,10 +12,18 @@
     "frontend"
   ],
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "dompurify": "3.4.0",
+    "follow-redirects": "1.16.0",
+    "serialize-javascript": "7.0.5"
   },
   "dependencies": {
     "framer-motion": "^12.38.0",
     "vite": "^8.0.8"
+  },
+  "overrides": {
+    "dompurify": "3.4.0",
+    "follow-redirects": "1.16.0",
+    "serialize-javascript": "7.0.5"
   }
 }
